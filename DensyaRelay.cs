@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO.MemoryMappedFiles;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
 
 class DensyaRelay: Form
@@ -38,6 +40,10 @@ class DensyaRelay: Form
 	private bool createMutex = false;
 	private bool lockMutex = false;
 	private string mutexName = "TSXMUTEX";
+
+	private MemoryMappedFile mmf = null;
+	private MemoryMappedViewAccessor mmfView = null;
+	private Mutex mutex = null;
 
 	private UIText uiText;
 	private string versionString = "";
@@ -385,6 +391,13 @@ class DensyaRelay: Form
 			uiText = new JapaneseUIText();
 		}
 		SetControlTexts();
+
+		mmf = MemoryMappedFile.CreateOrOpen(mmfName, 64);
+		mmfView = mmf.CreateViewAccessor();
+		if (createMutex)
+		{
+			mutex = new Mutex(false, mutexName);
+		}
 	}
 
 	private void FormClosedHandler(object sender, EventArgs e)
@@ -405,6 +418,9 @@ class DensyaRelay: Form
 			regIO.SetValue(PreferIPv6ValueName, preferIPv6Check.Checked ? 1 : 0);
 			regIO.Close();
 		}
+
+		if (mutex != null) mutex.Dispose();
+		mutex = null;
 	}
 
 	private void LanguageMenuClickHandler(object sender, EventArgs e)
@@ -438,6 +454,9 @@ class DensyaRelay: Form
 		DialogResult result = dialog.ShowDialog();
 		if (result == DialogResult.OK)
 		{
+			string oldMmfName = mmfName;
+			string oldMutexName = mutexName;
+
 			localPort = dialog.LocalPort;
 			localPortSameAsDestinationPort = dialog.LocalPortSameAsDestinationPort;
 			sendDataSize = dialog.SendSize;
@@ -447,7 +466,26 @@ class DensyaRelay: Form
 			lockMutex = dialog.LockMutex;
 			mutexName = dialog.MutexName;
 
-			// TODO: 設定を反映
+			// TODO: ネットワークの設定を反映
+			if (mmfName != oldMmfName)
+			{
+				if (mmf != null) mmf.Dispose();
+				mmf = MemoryMappedFile.CreateOrOpen(mmfName, 64);
+				mmfView = mmf.CreateViewAccessor();
+			}
+			if (createMutex)
+			{
+				if (mutex == null || mutexName != oldMutexName)
+				{
+					if (mutex != null) mutex.Dispose();
+					mutex = new Mutex(false, mutexName);
+				}
+			}
+			else
+			{
+				if (mutex != null) mutex.Dispose();
+				mutex = null;
+			}
 
 			RegistryIO regIO = RegistryIO.OpenForWrite();
 			if (regIO != null)
