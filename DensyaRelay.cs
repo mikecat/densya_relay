@@ -293,5 +293,6 @@ class DensyaRelay: Form
 	{
 		AdvancedConfiguration dialog = new AdvancedConfiguration(uiText);
 		DialogResult result = dialog.ShowDialog();
+		dialog.Dispose();
 	}
 }
