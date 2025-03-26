@@ -13,8 +13,6 @@ class DensyaRelay: Form
 		Application.Run(new DensyaRelay());
 	}
 
-	private const int fontSize = 16, gridSize = 20;
-
 	private readonly static string LanguageValueName = "language";
 	private readonly static string LanguageJapaneseData = "Japanese";
 	private readonly static string LanguageEnglishData = "English";
