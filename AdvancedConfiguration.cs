@@ -72,6 +72,7 @@ class AdvancedConfiguration: Form
 		this.FormBorderStyle = FormBorderStyle.FixedSingle;
 		this.MaximizeBox = false;
 		this.MinimizeBox = false;
+		this.ShowInTaskbar = false;
 		this.ClientSize = ControlUtils.GetSizeOnGrid(24, 14.5f);
 		SuspendLayout();
 
@@ -125,5 +126,21 @@ class AdvancedConfiguration: Form
 		this.CancelButton = cancelButton;
 
 		ResumeLayout();
+
+		localPortSameAsDestinationPortCheck.CheckedChanged += LocalPortSameAsDestinationPortCheckCheckedChangedHandler;
+		createMutexCheck.CheckedChanged += CreateMutexCheckCheckedChangedHandler;
+		LocalPortSameAsDestinationPortCheckCheckedChangedHandler(null, null);
+		CreateMutexCheckCheckedChangedHandler(null, null);
+	}
+
+	private void LocalPortSameAsDestinationPortCheckCheckedChangedHandler(object sender, EventArgs e)
+	{
+		localPortInput.Enabled = !localPortSameAsDestinationPortCheck.Checked;
+	}
+
+	private void CreateMutexCheckCheckedChangedHandler(object sender, EventArgs e)
+	{
+		lockMutexCheck.Enabled = createMutexCheck.Checked;
+		mutexNameInput.Enabled = createMutexCheck.Checked;
 	}
 }
