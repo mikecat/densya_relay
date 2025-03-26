@@ -35,4 +35,22 @@ class JapaneseUIText: UIText
 	public override string ATC { get { return "ATC"; }}
 	public override string ATCOff { get { return "消灯"; }}
 	public override string Speed { get { return "速度"; }}
+
+	public override string AdvancedConfigurationDialogTitle { get { return "高度な設定"; }}
+
+	public override string NetworkConfiguration { get { return "ネットワーク設定"; }}
+	public override string LocalPort { get { return "ローカルポート"; }}
+	public override string SameAsDestinationPort { get { return "送信先ポートと同じ"; }}
+	public override string SendSize { get { return "送信情報サイズ"; }}
+	public override string ReceiveSize { get { return "受信情報サイズ"; }}
+	public override string SizeUnit { get { return "バイト"; }}
+
+	public override string MmfConfiguration { get { return "メモリマップドファイル設定"; }}
+	public override string MmfName { get { return "メモリマップドファイル名"; }}
+	public override string CreateMutex { get { return "ミューテックスを作成する"; }}
+	public override string LockMutex { get { return "読み書き時ミューテックスをロック"; }}
+	public override string MutexName { get { return "ミューテックス名"; }}
+
+	public override string OK { get { return "OK"; }}
+	public override string Cancel { get { return "キャンセル"; }}
 }

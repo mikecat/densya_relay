@@ -35,4 +35,22 @@ abstract class UIText
 	public abstract string ATC { get; }
 	public abstract string ATCOff { get; }
 	public abstract string Speed { get; }
+
+	public abstract string AdvancedConfigurationDialogTitle { get; }
+
+	public abstract string NetworkConfiguration { get; }
+	public abstract string LocalPort { get; }
+	public abstract string SameAsDestinationPort { get; }
+	public abstract string SendSize { get; }
+	public abstract string ReceiveSize { get; }
+	public abstract string SizeUnit { get; }
+
+	public abstract string MmfConfiguration { get; }
+	public abstract string MmfName { get; }
+	public abstract string CreateMutex { get; }
+	public abstract string LockMutex { get; }
+	public abstract string MutexName { get; }
+
+	public abstract string OK { get; }
+	public abstract string Cancel { get; }
 }

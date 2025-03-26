@@ -229,6 +229,7 @@ class DensyaRelay: Form
 
 		languageJapaneseMenuItem.Click += LanguageMenuClickHandler;
 		languageEnglishMenuItem.Click += LanguageMenuClickHandler;
+		advancedConfigurationMenuItem.Click += AdvancedConfigurationMenuClickHandler;
 		SetControlTexts();
 	}
 
@@ -286,5 +287,11 @@ class DensyaRelay: Form
 			uiText = new EnglishUIText();
 		}
 		SetControlTexts();
+	}
+
+	private void AdvancedConfigurationMenuClickHandler(object sender, EventArgs e)
+	{
+		AdvancedConfiguration dialog = new AdvancedConfiguration(uiText);
+		DialogResult result = dialog.ShowDialog();
 	}
 }

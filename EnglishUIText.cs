@@ -35,4 +35,22 @@ class EnglishUIText: UIText
 	public override string ATC { get { return "ATC"; }}
 	public override string ATCOff { get { return "Off"; }}
 	public override string Speed { get { return "Speed"; }}
+
+	public override string AdvancedConfigurationDialogTitle { get { return "Advanced Configuration"; }}
+
+	public override string NetworkConfiguration { get { return "Network Configuration"; }}
+	public override string LocalPort { get { return "Local Port"; }}
+	public override string SameAsDestinationPort { get { return "Same as Destination Port"; }}
+	public override string SendSize { get { return "Send Data Size"; }}
+	public override string ReceiveSize { get { return "Receive Data Size"; }}
+	public override string SizeUnit { get { return "bytes"; }}
+
+	public override string MmfConfiguration { get { return "Memory Mapped File Configuration"; }}
+	public override string MmfName { get { return "Name of MMF"; }}
+	public override string CreateMutex { get { return "Create Mutex"; }}
+	public override string LockMutex { get { return "Lock Mutex on MMF Access"; }}
+	public override string MutexName { get { return "Name of Mutex"; }}
+
+	public override string OK { get { return "OK"; }}
+	public override string Cancel { get { return "Cancel"; }}
 }

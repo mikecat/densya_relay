@@ -8,6 +8,7 @@ OPTIONS= \
 SOURCES= \
 	AssemblyInfo.cs \
 	DensyaRelay.cs \
+	AdvancedConfiguration.cs \
 	ControlUtils.cs \
 	RegistryIO.cs \
 	UItext.cs \
