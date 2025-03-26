@@ -15,7 +15,33 @@ class DensyaRelay: Form
 
 	private const int fontSize = 16, gridSize = 20;
 
-	private UIText uiText = new JapaneseUIText();
+	private readonly static string LanguageValueName = "language";
+	private readonly static string LanguageJapaneseData = "Japanese";
+	private readonly static string LanguageEnglishData = "English";
+
+	private readonly static string PeerAddressValueName = "peerAddress";
+	private readonly static string DestinationPortValueName = "destinationPort";
+	private readonly static string PreferIPv6ValueName = "preferIPv6";
+
+	private readonly static string LocalPortValueName = "localPort";
+	private readonly static string LocalPortSameAsDestinationPortValueName = "localPortSameAsDestinationPort";
+	private readonly static string SendDataSizeValueName = "sendDataSize";
+	private readonly static string ReceiveDataSizeValueName = "receiveDataSize";
+	private readonly static string MmfNameValueName = "mmfName";
+	private readonly static string CreateMutexValueName = "createMutex";
+	private readonly static string LockMutexValueName = "lockMutex";
+	private readonly static string MutexNameValueName = "mutexName";
+
+	private int localPort = new Random().Next(49152, 65535 + 1);
+	private bool localPortSameAsDestinationPort = true;
+	private int sendDataSize = 4;
+	private int receiveDataSize = 8;
+	private string mmfName = "denconvMMF";
+	private bool createMutex = false;
+	private bool lockMutex = false;
+	private string mutexName = "TSXMUTEX";
+
+	private UIText uiText;
 	private string versionString = "";
 
 	private MenuStrip mainMenuStrip;
@@ -96,6 +122,7 @@ class DensyaRelay: Form
 		languageMenuItem.Text = "言語 / Language (&L)";
 		languageJapaneseMenuItem = new ToolStripMenuItem();
 		languageJapaneseMenuItem.Text = "日本語 (&J)";
+		languageJapaneseMenuItem.Checked = true;
 		languageEnglishMenuItem = new ToolStripMenuItem();
 		languageEnglishMenuItem.Text = "English (&E)";
 		languageMenuItem.DropDownItems.Add(languageJapaneseMenuItem);
@@ -119,6 +146,7 @@ class DensyaRelay: Form
 		networkModeRadioPanel = ControlUtils.CreateControl<Panel>(networkGroup, 0.5f, 1, 22, 1);
 		networkModeRadioPanel.SuspendLayout();
 		networkOffRadio = ControlUtils.CreateControl<RadioButton>(networkModeRadioPanel, 0, 0, 4, 1);
+		networkOffRadio.Checked = true;
 		networkSendRadio = ControlUtils.CreateControl<RadioButton>(networkModeRadioPanel, 4, 0, 9, 1);
 		networkReceiveRadio = ControlUtils.CreateControl<RadioButton>(networkModeRadioPanel, 13, 0, 9, 1);
 		networkModeRadioPanel.ResumeLayout();
@@ -128,6 +156,7 @@ class DensyaRelay: Form
 		networkPortInput = ControlUtils.CreateControl<NumericUpDown>(networkGroup, 19, 2.5f, 4, 1);
 		networkPortInput.Minimum = 0;
 		networkPortInput.Maximum = 65535;
+		networkPortInput.Value = localPort;
 		preferIPv6Check = ControlUtils.CreateControl<CheckBox>(networkGroup, 23.5f, 2.5f, 5.5f, 1);
 		networkLastReceiveLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 4, 19, 1.5f);
 		openKeySendWindowButton = ControlUtils.CreateControl<Button>(networkGroup, 19.5f, 4, 10, 1.5f);
@@ -230,7 +259,9 @@ class DensyaRelay: Form
 		languageJapaneseMenuItem.Click += LanguageMenuClickHandler;
 		languageEnglishMenuItem.Click += LanguageMenuClickHandler;
 		advancedConfigurationMenuItem.Click += AdvancedConfigurationMenuClickHandler;
-		SetControlTexts();
+
+		Load += LoadHandler;
+		FormClosed += FormClosedHandler;
 	}
 
 	private void SetControlTexts()
@@ -272,6 +303,112 @@ class DensyaRelay: Form
 		speedLabel.Text = uiText.Speed;
 	}
 
+	private void LoadHandler(object sender, EventArgs e)
+	{
+		RegistryIO regIO = RegistryIO.OpenForRead();
+		if (regIO != null)
+		{
+			string languageData = regIO.GetStringValue(LanguageValueName);
+			if (languageData == LanguageEnglishData)
+			{
+				languageJapaneseMenuItem.Checked = false;
+				languageEnglishMenuItem.Checked = true;
+			}
+			else if (languageData == LanguageJapaneseData)
+			{
+				languageJapaneseMenuItem.Checked = true;
+				languageEnglishMenuItem.Checked = false;
+			}
+			string peerAddressData = regIO.GetStringValue(PeerAddressValueName);
+			if (peerAddressData != null) {
+				networkPeerAddressInput.Text = peerAddressData;
+			}
+			int? destinationPortData = regIO.GetIntValue(DestinationPortValueName);
+			if (destinationPortData.HasValue)
+			{
+				networkPortInput.Value = Math.Min(Math.Max(destinationPortData.Value, 0), 65535);
+			}
+			int? preferIPv6Data = regIO.GetIntValue(PreferIPv6ValueName);
+			if (preferIPv6Data.HasValue)
+			{
+				preferIPv6Check.Checked = preferIPv6Data.Value != 0;
+			}
+
+			int? localPortData = regIO.GetIntValue(LocalPortValueName);
+			if (localPortData.HasValue)
+			{
+				localPort = Math.Min(Math.Max(localPortData.Value, 0), 65535);
+			}
+			int? localPortSameAsDestinationPortData = regIO.GetIntValue(LocalPortSameAsDestinationPortValueName);
+			if (localPortSameAsDestinationPortData.HasValue)
+			{
+				localPortSameAsDestinationPort = localPortSameAsDestinationPortData.Value != 0;
+			}
+			int? sendDataSizeData = regIO.GetIntValue(SendDataSizeValueName);
+			if (sendDataSizeData.HasValue)
+			{
+				sendDataSize = Math.Min(Math.Max(sendDataSizeData.Value, 0), 10);
+			}
+			int? receiveDataSizeData = regIO.GetIntValue(ReceiveDataSizeValueName);
+			if (receiveDataSizeData.HasValue)
+			{
+				receiveDataSize = Math.Min(Math.Max(receiveDataSizeData.Value, 0), 54);
+			}
+			string mmfNameData = regIO.GetStringValue(MmfNameValueName);
+			if (mmfNameData != null)
+			{
+				mmfName = mmfNameData;
+			}
+			int? createMutexData = regIO.GetIntValue(CreateMutexValueName);
+			if (createMutexData.HasValue)
+			{
+				createMutex = createMutexData.Value != 0;
+			}
+			int? lockMutexData = regIO.GetIntValue(LockMutexValueName);
+			if (lockMutexData.HasValue)
+			{
+				lockMutex = lockMutexData.Value != 0;
+			}
+			string mutexNameData = regIO.GetStringValue(MutexNameValueName);
+			if (mutexNameData != null)
+			{
+				mutexName = mutexNameData;
+			}
+
+			regIO.Close();
+		}
+
+		if (languageEnglishMenuItem.Checked)
+		{
+			uiText = new EnglishUIText();
+		}
+		else
+		{
+			uiText = new JapaneseUIText();
+		}
+		SetControlTexts();
+	}
+
+	private void FormClosedHandler(object sender, EventArgs e)
+	{
+		RegistryIO regIO = RegistryIO.OpenForWrite();
+		if (regIO != null)
+		{
+			if (languageJapaneseMenuItem.Checked)
+			{
+				regIO.SetValue(LanguageValueName, LanguageJapaneseData);
+			}
+			else if (languageEnglishMenuItem.Checked)
+			{
+				regIO.SetValue(LanguageValueName, LanguageEnglishData);
+			}
+			regIO.SetValue(PeerAddressValueName, networkPeerAddressInput.Text);
+			regIO.SetValue(DestinationPortValueName, (int)networkPortInput.Value);
+			regIO.SetValue(PreferIPv6ValueName, preferIPv6Check.Checked ? 1 : 0);
+			regIO.Close();
+		}
+	}
+
 	private void LanguageMenuClickHandler(object sender, EventArgs e)
 	{
 		if (sender == languageJapaneseMenuItem)
@@ -292,7 +429,42 @@ class DensyaRelay: Form
 	private void AdvancedConfigurationMenuClickHandler(object sender, EventArgs e)
 	{
 		AdvancedConfiguration dialog = new AdvancedConfiguration(uiText);
+		dialog.LocalPort = localPort;
+		dialog.LocalPortSameAsDestinationPort = localPortSameAsDestinationPort;
+		dialog.SendSize = sendDataSize;
+		dialog.ReceiveSize = receiveDataSize;
+		dialog.MmfName = mmfName;
+		dialog.CreateMutex = createMutex;
+		dialog.LockMutex = lockMutex;
+		dialog.MutexName = mutexName;
 		DialogResult result = dialog.ShowDialog();
+		if (result == DialogResult.OK)
+		{
+			localPort = dialog.LocalPort;
+			localPortSameAsDestinationPort = dialog.LocalPortSameAsDestinationPort;
+			sendDataSize = dialog.SendSize;
+			receiveDataSize = dialog.ReceiveSize;
+			mmfName = dialog.MmfName;
+			createMutex = dialog.CreateMutex;
+			lockMutex = dialog.LockMutex;
+			mutexName = dialog.MutexName;
+
+			// TODO: 設定を反映
+
+			RegistryIO regIO = RegistryIO.OpenForWrite();
+			if (regIO != null)
+			{
+				regIO.SetValue(LocalPortValueName, localPort);
+				regIO.SetValue(LocalPortSameAsDestinationPortValueName, localPortSameAsDestinationPort ? 1 : 0);
+				regIO.SetValue(SendDataSizeValueName, sendDataSize);
+				regIO.SetValue(ReceiveDataSizeValueName, receiveDataSize);
+				regIO.SetValue(MmfNameValueName, mmfName);
+				regIO.SetValue(CreateMutexValueName, createMutex ? 1 : 0);
+				regIO.SetValue(LockMutexValueName, lockMutex ? 1 : 0);
+				regIO.SetValue(MutexNameValueName, mutexName);
+				regIO.Close();
+			}
+		}
 		dialog.Dispose();
 	}
 }

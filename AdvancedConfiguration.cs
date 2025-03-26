@@ -24,6 +24,47 @@ class AdvancedConfiguration: Form
 	private Button okButton;
 	private Button cancelButton;
 
+	public int LocalPort
+	{
+		get { return (int)localPortInput.Value; }
+		set { localPortInput.Value = Math.Min(Math.Max(value, 0), 65535); }
+	}
+	public bool LocalPortSameAsDestinationPort
+	{
+		get { return localPortSameAsDestinationPortCheck.Checked; }
+		set { localPortSameAsDestinationPortCheck.Checked = value; }
+	}
+	public int SendSize
+	{
+		get { return (int)sendSizeInput.Value; }
+		set { sendSizeInput.Value = Math.Min(Math.Max(value, 0), 10); }
+	}
+	public int ReceiveSize
+	{
+		get { return (int)receiveSizeInput.Value; }
+		set { receiveSizeInput.Value = Math.Min(Math.Max(value, 0), 54); }
+	}
+	public string MmfName
+	{
+		get { return mmfNameInput.Text; }
+		set { mmfNameInput.Text = value; }
+	}
+	public bool CreateMutex
+	{
+		get { return createMutexCheck.Checked; }
+		set { createMutexCheck.Checked = value; }
+	}
+	public bool LockMutex
+	{
+		get { return lockMutexCheck.Checked; }
+		set { lockMutexCheck.Checked = value; }
+	}
+	public string MutexName
+	{
+		get { return mutexNameInput.Text; }
+		set { mutexNameInput.Text = value; }
+	}
+
 	public AdvancedConfiguration(UIText uiText)
 	{
 		this.Text = uiText.AdvancedConfigurationDialogTitle;
@@ -47,11 +88,15 @@ class AdvancedConfiguration: Form
 		sendSizeLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 2.5f, 7, 1);
 		sendSizeLabel.Text = uiText.SendSize;
 		sendSizeInput = ControlUtils.CreateControl<NumericUpDown>(networkGroup, 7.5f, 2.5f, 4, 1);
+		sendSizeInput.Minimum = 0;
+		sendSizeInput.Maximum = 10;
 		sendSizeUnitLabel = ControlUtils.CreateControl<Label>(networkGroup, 12, 2.5f, 4, 1);
 		sendSizeUnitLabel.Text = uiText.SizeUnit;
 		receiveSizeLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 4, 7, 1);
 		receiveSizeLabel.Text = uiText.ReceiveSize;
 		receiveSizeInput = ControlUtils.CreateControl<NumericUpDown>(networkGroup, 7.5f, 4, 4, 1);
+		receiveSizeInput.Minimum = 0;
+		receiveSizeInput.Maximum = 54;
 		receiveSizeUnitLabel = ControlUtils.CreateControl<Label>(networkGroup, 12, 4, 8, 1);
 		receiveSizeUnitLabel.Text = uiText.SizeUnit;
 		networkGroup.ResumeLayout();
@@ -73,6 +118,7 @@ class AdvancedConfiguration: Form
 
 		okButton = ControlUtils.CreateControl<Button>(this, 14, 12.5f, 4.5f, 1.5f);
 		okButton.Text = uiText.OK;
+		okButton.DialogResult = DialogResult.OK;
 		this.AcceptButton = okButton;
 		cancelButton = ControlUtils.CreateControl<Button>(this, 19, 12.5f, 4.5f, 1.5f);
 		cancelButton.Text = uiText.Cancel;

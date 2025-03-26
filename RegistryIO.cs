@@ -3,7 +3,7 @@ using System;
 
 class RegistryIO
 {
-	private static readonly string RegistrySubKeyPath = "Software\\MikeCAT\\Stick3020";
+	private static readonly string RegistrySubKeyPath = "Software\\MikeCAT\\DensyaRelay";
 
 	private RegistryKey Key;
 
