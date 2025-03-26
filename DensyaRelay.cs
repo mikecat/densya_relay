@@ -44,6 +44,7 @@ class DensyaRelay: Form
 	private MemoryMappedFile mmf = null;
 	private MemoryMappedViewAccessor mmfView = null;
 	private Mutex mutex = null;
+	private System.Windows.Forms.Timer mmfPollingTimer;
 
 	private UIText uiText;
 	private string versionString = "";
@@ -398,6 +399,24 @@ class DensyaRelay: Form
 		{
 			mutex = new Mutex(false, mutexName);
 		}
+
+		brakeBar.Scroll += BrakeBarScrollHandler;
+		brakeInput.ValueChanged += BrakeInputValueChangedHandler;
+		powerBar.Scroll += PowerBarScrollHandler;
+		powerInput.ValueChanged += PowerInputValueChangedHandler;
+		controllerSanyoRadio.CheckedChanged += ControllerRadioCheckedChangedHandler;
+		controllerReversedSanyoRadio.CheckedChanged += ControllerRadioCheckedChangedHandler;
+		controllerRyojoRadio.CheckedChanged += ControllerRadioCheckedChangedHandler;
+		controllerOtherRadio.CheckedChanged += ControllerRadioCheckedChangedHandler;
+		controllerPowerInput.ValueChanged += ControllerInputValueChangedHandler;
+		controllerBrakeInput.ValueChanged += ControllerInputValueChangedHandler;
+		extBrakeBar.Scroll += ExtBrakeBarScrollHandler;
+		extBrakeInput.ValueChanged += ExtBrakeInputValueChangedHandler;
+
+		mmfPollingTimer = new System.Windows.Forms.Timer();
+		mmfPollingTimer.Interval = 15;
+		mmfPollingTimer.Tick += MmfPollingTimerTickHandler;
+		mmfPollingTimer.Start();
 	}
 
 	private void FormClosedHandler(object sender, EventArgs e)
@@ -419,6 +438,7 @@ class DensyaRelay: Form
 			regIO.Close();
 		}
 
+		if (mmfPollingTimer != null) mmfPollingTimer.Stop();
 		if (mutex != null) mutex.Dispose();
 		mutex = null;
 	}
@@ -502,5 +522,115 @@ class DensyaRelay: Form
 			}
 		}
 		dialog.Dispose();
+	}
+
+	private void WriteByteToMMF(int idx, int value)
+	{
+		Mutex mutexToLock = lockMutex ? mutex : null;
+		if (mutexToLock != null)
+		{
+			try
+			{
+				mutexToLock.WaitOne();
+			}
+			catch (AbandonedMutexException)
+			{
+				// 握りつぶす
+			}
+		}
+		mmfView.Write(idx, (byte)value);
+		if (mutexToLock != null) mutexToLock.ReleaseMutex();
+	}
+
+	private void BrakeBarScrollHandler(object sender, EventArgs e)
+	{
+		brakeInput.Value = brakeBar.Value;
+	}
+
+	private void BrakeInputValueChangedHandler(object sender, EventArgs e)
+	{
+		brakeBar.Value = Math.Min((int)brakeInput.Value, brakeBar.Maximum);
+		WriteByteToMMF(0, (int)brakeInput.Value);
+	}
+
+	private void PowerBarScrollHandler(object sender, EventArgs e)
+	{
+		powerInput.Value = powerBar.Value;
+	}
+
+	private void PowerInputValueChangedHandler(object sender, EventArgs e)
+	{
+		powerBar.Value = Math.Min((int)powerInput.Value, powerBar.Maximum);
+		WriteByteToMMF(1, (int)powerInput.Value);
+	}
+
+	private void ControllerRadioCheckedChangedHandler(object sender, EventArgs e)
+	{
+		if (!((RadioButton)sender).Checked) return;
+		if (controllerSanyoRadio.Checked)
+		{
+			controllerPowerInput.Value = 0;
+			controllerBrakeInput.Value = 1;
+		}
+		else if (controllerReversedSanyoRadio.Checked)
+		{
+			controllerPowerInput.Value = 0;
+			controllerBrakeInput.Value = 2;
+		}
+		else if (controllerRyojoRadio.Checked)
+		{
+			controllerPowerInput.Value = 0;
+			controllerBrakeInput.Value = 3;
+		}
+	}
+
+	private void ControllerInputValueChangedHandler(object sender, EventArgs e)
+	{
+		int controllerValue = (int)(controllerPowerInput.Value * 10 + controllerBrakeInput.Value);
+		if (controllerValue > 255) controllerValue = 255;
+		switch (controllerValue)
+		{
+			case 1: controllerSanyoRadio.Checked = true; break;
+			case 2: controllerReversedSanyoRadio.Checked = true; break;
+			case 3: controllerRyojoRadio.Checked = true; break;
+			default: controllerOtherRadio.Checked = true; break;
+		}
+		WriteByteToMMF(2, controllerValue);
+	}
+
+	private void ExtBrakeBarScrollHandler(object sender, EventArgs e)
+	{
+		extBrakeInput.Value = extBrakeBar.Value;
+	}
+
+	private void ExtBrakeInputValueChangedHandler(object sender, EventArgs e)
+	{
+		extBrakeBar.Value = Math.Min((int)extBrakeInput.Value, extBrakeBar.Maximum);
+		WriteByteToMMF(3, (int)extBrakeInput.Value);
+	}
+
+	private void MmfPollingTimerTickHandler(object sender, EventArgs e)
+	{
+		Mutex mutexToLock = lockMutex ? mutex : null;
+		if (mutexToLock != null)
+		{
+			try
+			{
+				mutexToLock.WaitOne();
+			}
+			catch (AbandonedMutexException)
+			{
+				// 握りつぶす
+			}
+		}
+		byte[] mmfData = new byte[64];
+		mmfView.ReadArray<byte>(0, mmfData, 0, 64);
+		if (mutexToLock != null) mutexToLock.ReleaseMutex();
+
+		brakeInput.Value = mmfData[0];
+		powerInput.Value = mmfData[1];
+		controllerPowerInput.Value = mmfData[2] / 10;
+		controllerBrakeInput.Value = mmfData[2] % 10;
+		extBrakeInput.Value = mmfData[3];
 	}
 }
