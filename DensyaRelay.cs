@@ -15,26 +15,6 @@ class DensyaRelay: Form
 
 	private const int fontSize = 16, gridSize = 20;
 
-	private static Size GetSizeOnGrid(float width, float height)
-	{
-		return new Size((int)(gridSize * width), (int)(gridSize * height));
-	}
-
-	private static Point GetPointOnGrid(float x, float y)
-	{
-		return new Point((int)(gridSize * x), (int)(gridSize * y));
-	}
-
-	private static T CreateControl<T>(Control parent, float x, float y, float width, float height)
-	where T: Control, new()
-	{
-		T control = new T();
-		control.Location = GetPointOnGrid(x, y);
-		control.Size = GetSizeOnGrid(width, height);
-		if (parent != null) parent.Controls.Add(control);
-		return control;
-	}
-
 	private UIText uiText = new JapaneseUIText();
 	private string versionString = "";
 
@@ -106,7 +86,7 @@ class DensyaRelay: Form
 			);
 		}
 
-		this.Font = new Font("MS UI Gothic", fontSize, GraphicsUnit.Pixel);
+		this.Font = ControlUtils.Font;
 		this.FormBorderStyle = FormBorderStyle.FixedSingle;
 		this.MaximizeBox = false;
 		SuspendLayout();
@@ -128,118 +108,118 @@ class DensyaRelay: Form
 		this.Controls.Add(mainMenuStrip);
 		this.MainMenuStrip = mainMenuStrip;
 
-		mainPanel = CreateControl<Panel>(this, 0, 0, 31, 22);
+		mainPanel = ControlUtils.CreateControl<Panel>(this, 0, 0, 31, 22);
 		mainPanel.Top += mainMenuStrip.Height;
 		this.ClientSize = mainPanel.Size;
 		this.Height += mainMenuStrip.Height;
 		mainPanel.SuspendLayout();
 
-		networkGroup = CreateControl<GroupBox>(mainPanel, 0.5f, 0.5f, 30, 6);
+		networkGroup = ControlUtils.CreateControl<GroupBox>(mainPanel, 0.5f, 0.5f, 30, 6);
 		networkGroup.SuspendLayout();
-		networkModeRadioPanel = CreateControl<Panel>(networkGroup, 0.5f, 1, 22, 1);
+		networkModeRadioPanel = ControlUtils.CreateControl<Panel>(networkGroup, 0.5f, 1, 22, 1);
 		networkModeRadioPanel.SuspendLayout();
-		networkOffRadio = CreateControl<RadioButton>(networkModeRadioPanel, 0, 0, 4, 1);
-		networkSendRadio = CreateControl<RadioButton>(networkModeRadioPanel, 4, 0, 9, 1);
-		networkReceiveRadio = CreateControl<RadioButton>(networkModeRadioPanel, 13, 0, 9, 1);
+		networkOffRadio = ControlUtils.CreateControl<RadioButton>(networkModeRadioPanel, 0, 0, 4, 1);
+		networkSendRadio = ControlUtils.CreateControl<RadioButton>(networkModeRadioPanel, 4, 0, 9, 1);
+		networkReceiveRadio = ControlUtils.CreateControl<RadioButton>(networkModeRadioPanel, 13, 0, 9, 1);
 		networkModeRadioPanel.ResumeLayout();
-		networkPeerAddressLabel = CreateControl<Label>(networkGroup, 0.5f, 2.5f, 7, 1);
-		networkPeerAddressInput = CreateControl<TextBox>(networkGroup, 7.5f, 2.5f, 8.5f, 1);
-		networkPortLabel = CreateControl<Label>(networkGroup, 16, 2.5f, 3, 1);
-		networkPortInput = CreateControl<NumericUpDown>(networkGroup, 19, 2.5f, 4, 1);
+		networkPeerAddressLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 2.5f, 7, 1);
+		networkPeerAddressInput = ControlUtils.CreateControl<TextBox>(networkGroup, 7.5f, 2.5f, 8.5f, 1);
+		networkPortLabel = ControlUtils.CreateControl<Label>(networkGroup, 16, 2.5f, 3, 1);
+		networkPortInput = ControlUtils.CreateControl<NumericUpDown>(networkGroup, 19, 2.5f, 4, 1);
 		networkPortInput.Minimum = 0;
 		networkPortInput.Maximum = 65535;
-		preferIPv6Check = CreateControl<CheckBox>(networkGroup, 23.5f, 2.5f, 5.5f, 1);
-		networkLastReceiveLabel = CreateControl<Label>(networkGroup, 0.5f, 4, 19, 1.5f);
-		openKeySendWindowButton = CreateControl<Button>(networkGroup, 19.5f, 4, 10, 1.5f);
+		preferIPv6Check = ControlUtils.CreateControl<CheckBox>(networkGroup, 23.5f, 2.5f, 5.5f, 1);
+		networkLastReceiveLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 4, 19, 1.5f);
+		openKeySendWindowButton = ControlUtils.CreateControl<Button>(networkGroup, 19.5f, 4, 10, 1.5f);
 		networkGroup.ResumeLayout();
 
-		sendingGroup = CreateControl<GroupBox>(mainPanel, 0.5f, 7, 30, 7);
+		sendingGroup = ControlUtils.CreateControl<GroupBox>(mainPanel, 0.5f, 7, 30, 7);
 		sendingGroup.SuspendLayout();
-		brakeLabel = CreateControl<Label>(sendingGroup, 0.5f, 1, 5, 1);
-		brakeBar = CreateControl<HScrollBar>(sendingGroup, 5.5f, 1, 20.5f, 1);
+		brakeLabel = ControlUtils.CreateControl<Label>(sendingGroup, 0.5f, 1, 5, 1);
+		brakeBar = ControlUtils.CreateControl<HScrollBar>(sendingGroup, 5.5f, 1, 20.5f, 1);
 		brakeBar.Minimum = 0;
 		brakeBar.Maximum = 10;
 		brakeBar.SmallChange = 1;
 		brakeBar.LargeChange = 1;
-		brakeInput = CreateControl<NumericUpDown>(sendingGroup, 26.5f, 1, 3, 1);
+		brakeInput = ControlUtils.CreateControl<NumericUpDown>(sendingGroup, 26.5f, 1, 3, 1);
 		brakeInput.Minimum = 0;
 		brakeInput.Maximum = 255;
-		powerLabel = CreateControl<Label>(sendingGroup, 0.5f, 2.5f, 5, 1);
-		powerBar = CreateControl<HScrollBar>(sendingGroup, 5.5f, 2.5f, 20.5f, 1);
+		powerLabel = ControlUtils.CreateControl<Label>(sendingGroup, 0.5f, 2.5f, 5, 1);
+		powerBar = ControlUtils.CreateControl<HScrollBar>(sendingGroup, 5.5f, 2.5f, 20.5f, 1);
 		powerBar.Minimum = 0;
 		powerBar.Maximum = 13;
 		powerBar.SmallChange = 1;
 		powerBar.LargeChange = 1;
-		powerInput = CreateControl<NumericUpDown>(sendingGroup, 26.5f, 2.5f, 3, 1);
+		powerInput = ControlUtils.CreateControl<NumericUpDown>(sendingGroup, 26.5f, 2.5f, 3, 1);
 		powerInput.Minimum = 0;
 		powerInput.Maximum = 255;
-		controllerLabel = CreateControl<Label>(sendingGroup, 0.5f, 4, 5, 1);
-		controllerRadioPanel = CreateControl<Panel>(sendingGroup, 5.5f, 4, 18, 1);
+		controllerLabel = ControlUtils.CreateControl<Label>(sendingGroup, 0.5f, 4, 5, 1);
+		controllerRadioPanel = ControlUtils.CreateControl<Panel>(sendingGroup, 5.5f, 4, 18, 1);
 		controllerRadioPanel.SuspendLayout();
-		controllerSanyoRadio = CreateControl<RadioButton>(controllerRadioPanel, 0, 0, 4, 1);
-		controllerReversedSanyoRadio = CreateControl<RadioButton>(controllerRadioPanel, 4, 0, 6, 1);
-		controllerRyojoRadio = CreateControl<RadioButton>(controllerRadioPanel, 10, 0, 4, 1);
-		controllerOtherRadio = CreateControl<RadioButton>(controllerRadioPanel, 14, 0, 4, 1);
+		controllerSanyoRadio = ControlUtils.CreateControl<RadioButton>(controllerRadioPanel, 0, 0, 4, 1);
+		controllerReversedSanyoRadio = ControlUtils.CreateControl<RadioButton>(controllerRadioPanel, 4, 0, 6, 1);
+		controllerRyojoRadio = ControlUtils.CreateControl<RadioButton>(controllerRadioPanel, 10, 0, 4, 1);
+		controllerOtherRadio = ControlUtils.CreateControl<RadioButton>(controllerRadioPanel, 14, 0, 4, 1);
 		controllerRadioPanel.ResumeLayout();
-		controllerPowerLabel = CreateControl<Label>(sendingGroup, 23.5f, 4, 1, 1);
-		controllerPowerInput = CreateControl<NumericUpDown>(sendingGroup, 24.5f, 4, 2, 1);
+		controllerPowerLabel = ControlUtils.CreateControl<Label>(sendingGroup, 23.5f, 4, 1, 1);
+		controllerPowerInput = ControlUtils.CreateControl<NumericUpDown>(sendingGroup, 24.5f, 4, 2, 1);
 		controllerPowerInput.Minimum = 0;
 		controllerPowerInput.Maximum = 25;
-		controllerBrakeLabel = CreateControl<Label>(sendingGroup, 26.5f, 4, 1, 1);
-		controllerBrakeInput = CreateControl<NumericUpDown>(sendingGroup, 27.5f, 4, 2, 1);
+		controllerBrakeLabel = ControlUtils.CreateControl<Label>(sendingGroup, 26.5f, 4, 1, 1);
+		controllerBrakeInput = ControlUtils.CreateControl<NumericUpDown>(sendingGroup, 27.5f, 4, 2, 1);
 		controllerBrakeInput.Minimum = 0;
 		controllerBrakeInput.Maximum = 9;
-		extBrakeLabel = CreateControl<Label>(sendingGroup, 0.5f, 5.5f, 5, 1);
-		extBrakeBar = CreateControl<HScrollBar>(sendingGroup, 5.5f, 5.5f, 20.5f, 1);
+		extBrakeLabel = ControlUtils.CreateControl<Label>(sendingGroup, 0.5f, 5.5f, 5, 1);
+		extBrakeBar = ControlUtils.CreateControl<HScrollBar>(sendingGroup, 5.5f, 5.5f, 20.5f, 1);
 		extBrakeBar.Minimum = 0;
 		extBrakeBar.Maximum = 255;
 		extBrakeBar.SmallChange = 1;
 		extBrakeBar.LargeChange = 30;
-		extBrakeInput = CreateControl<NumericUpDown>(sendingGroup, 26.5f, 5.5f, 3, 1);
+		extBrakeInput = ControlUtils.CreateControl<NumericUpDown>(sendingGroup, 26.5f, 5.5f, 3, 1);
 		extBrakeInput.Minimum = 0;
 		extBrakeInput.Maximum = 255;
 		sendingGroup.ResumeLayout();
 
-		receivingGroup = CreateControl<GroupBox>(mainPanel, 0.5f, 14.5f, 30, 7);
+		receivingGroup = ControlUtils.CreateControl<GroupBox>(mainPanel, 0.5f, 14.5f, 30, 7);
 		receivingGroup.SuspendLayout();
-		doorClosedCheck = CreateControl<CheckBox>(receivingGroup, 0.5f, 1, 6, 1);
-		doorClosedInput = CreateControl<NumericUpDown>(receivingGroup, 6.5f, 1, 3, 1);
+		doorClosedCheck = ControlUtils.CreateControl<CheckBox>(receivingGroup, 0.5f, 1, 6, 1);
+		doorClosedInput = ControlUtils.CreateControl<NumericUpDown>(receivingGroup, 6.5f, 1, 3, 1);
 		doorClosedInput.Minimum = 0;
 		doorClosedInput.Maximum = 255;
-		shockLeftCheck = CreateControl<CheckBox>(receivingGroup, 10.5f, 1, 6, 1);
-		shockLeftInput = CreateControl<NumericUpDown>(receivingGroup, 16.5f, 1, 3, 1);
+		shockLeftCheck = ControlUtils.CreateControl<CheckBox>(receivingGroup, 10.5f, 1, 6, 1);
+		shockLeftInput = ControlUtils.CreateControl<NumericUpDown>(receivingGroup, 16.5f, 1, 3, 1);
 		shockLeftInput.Minimum = 0;
 		shockLeftInput.Maximum = 255;
-		shockRightCheck = CreateControl<CheckBox>(receivingGroup, 20.5f, 1, 6, 1);
-		shockRightInput = CreateControl<NumericUpDown>(receivingGroup, 26.5f, 1, 3, 1);
+		shockRightCheck = ControlUtils.CreateControl<CheckBox>(receivingGroup, 20.5f, 1, 6, 1);
+		shockRightInput = ControlUtils.CreateControl<NumericUpDown>(receivingGroup, 26.5f, 1, 3, 1);
 		shockRightInput.Minimum = 0;
 		shockRightInput.Maximum = 255;
-		ledLabel = CreateControl<Label>(receivingGroup, 0.5f, 2.5f, 3, 1);
-		ledBar = CreateControl<HScrollBar>(receivingGroup, 3.5f, 2.5f, 22.5f, 1);
+		ledLabel = ControlUtils.CreateControl<Label>(receivingGroup, 0.5f, 2.5f, 3, 1);
+		ledBar = ControlUtils.CreateControl<HScrollBar>(receivingGroup, 3.5f, 2.5f, 22.5f, 1);
 		ledBar.Minimum = 0;
 		ledBar.Maximum = 10;
 		ledBar.SmallChange = 1;
 		ledBar.LargeChange = 1;
-		ledInput = CreateControl<NumericUpDown>(receivingGroup, 26.5f, 2.5f, 3, 1);
+		ledInput = ControlUtils.CreateControl<NumericUpDown>(receivingGroup, 26.5f, 2.5f, 3, 1);
 		ledInput.Minimum = 0;
 		ledInput.Maximum = 255;
-		atcLabel = CreateControl<Label>(receivingGroup, 0.5f, 4, 3, 1);
-		atcBar = CreateControl<HScrollBar>(receivingGroup, 3.5f, 4, 18.5f, 1);
+		atcLabel = ControlUtils.CreateControl<Label>(receivingGroup, 0.5f, 4, 3, 1);
+		atcBar = ControlUtils.CreateControl<HScrollBar>(receivingGroup, 3.5f, 4, 18.5f, 1);
 		atcBar.Minimum = 0;
 		atcBar.Maximum = 999;
 		atcBar.SmallChange = 1;
 		atcBar.LargeChange = 10;
-		atcOffCheck = CreateControl<CheckBox>(receivingGroup, 22.5f, 4, 3, 1);
-		atcInput = CreateControl<NumericUpDown>(receivingGroup, 25.5f, 4, 4, 1);
+		atcOffCheck = ControlUtils.CreateControl<CheckBox>(receivingGroup, 22.5f, 4, 3, 1);
+		atcInput = ControlUtils.CreateControl<NumericUpDown>(receivingGroup, 25.5f, 4, 4, 1);
 		atcInput.Minimum = 0;
 		atcInput.Maximum = 65535;
-		speedLabel = CreateControl<Label>(receivingGroup, 0.5f, 5.5f, 3, 1);
-		speedBar = CreateControl<HScrollBar>(receivingGroup, 3.5f, 5.5f, 18.5f, 1);
+		speedLabel = ControlUtils.CreateControl<Label>(receivingGroup, 0.5f, 5.5f, 3, 1);
+		speedBar = ControlUtils.CreateControl<HScrollBar>(receivingGroup, 3.5f, 5.5f, 18.5f, 1);
 		speedBar.Minimum = 0;
 		speedBar.Maximum = 999;
 		speedBar.SmallChange = 1;
 		speedBar.LargeChange = 10;
-		speedInput = CreateControl<NumericUpDown>(receivingGroup, 25.5f, 5.5f, 4, 1);
+		speedInput = ControlUtils.CreateControl<NumericUpDown>(receivingGroup, 25.5f, 5.5f, 4, 1);
 		speedInput.Minimum = 0;
 		speedInput.Maximum = 65535;
 		receivingGroup.ResumeLayout();

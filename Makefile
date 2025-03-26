@@ -8,6 +8,7 @@ OPTIONS= \
 SOURCES= \
 	AssemblyInfo.cs \
 	DensyaRelay.cs \
+	ControlUtils.cs \
 	RegistryIO.cs \
 	UItext.cs \
 	JapaneseUIText.cs \
