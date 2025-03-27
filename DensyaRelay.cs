@@ -413,6 +413,20 @@ class DensyaRelay: Form
 		extBrakeBar.Scroll += ExtBrakeBarScrollHandler;
 		extBrakeInput.ValueChanged += ExtBrakeInputValueChangedHandler;
 
+		doorClosedCheck.Click += DoorClosedCheckClickHandler;
+		doorClosedInput.ValueChanged += DoorClosedInputValueChangedHandler;
+		shockLeftCheck.Click += ShockLeftCheckClickHandler;
+		shockLeftInput.ValueChanged += ShockLeftInputValueChangedHandler;
+		shockRightCheck.Click += ShockRightCheckClickHandler;
+		shockRightInput.ValueChanged += ShockRightInputValueChangedHandler;
+		ledBar.Scroll += LedBarScrollHandler;
+		ledInput.ValueChanged += LedInputValueChangedHandler;
+		atcBar.Scroll += AtcBarScrollHandler;
+		atcOffCheck.Click += AtcOffCheckClickHandler;
+		atcInput.ValueChanged += AtcInputValueChangedHandler;
+		speedBar.Scroll += SpeedBarScrollHandler;
+		speedInput.ValueChanged += SpeedInputValueChangedHandler;
+
 		mmfPollingTimer = new System.Windows.Forms.Timer();
 		mmfPollingTimer.Interval = 15;
 		mmfPollingTimer.Tick += MmfPollingTimerTickHandler;
@@ -542,6 +556,25 @@ class DensyaRelay: Form
 		if (mutexToLock != null) mutexToLock.ReleaseMutex();
 	}
 
+	private void WriteWordToMMF(int idx, int value)
+	{
+		Mutex mutexToLock = lockMutex ? mutex : null;
+		if (mutexToLock != null)
+		{
+			try
+			{
+				mutexToLock.WaitOne();
+			}
+			catch (AbandonedMutexException)
+			{
+				// 握りつぶす
+			}
+		}
+		mmfView.Write(idx, (byte)value);
+		mmfView.Write(idx + 1, (byte)(value >> 8));
+		if (mutexToLock != null) mutexToLock.ReleaseMutex();
+	}
+
 	private void BrakeBarScrollHandler(object sender, EventArgs e)
 	{
 		brakeInput.Value = brakeBar.Value;
@@ -608,6 +641,78 @@ class DensyaRelay: Form
 		WriteByteToMMF(3, (int)extBrakeInput.Value);
 	}
 
+	private void DoorClosedCheckClickHandler(object sender, EventArgs e)
+	{
+		doorClosedInput.Value = doorClosedCheck.Checked ? 1 : 0;
+	}
+
+	private void DoorClosedInputValueChangedHandler(object sender, EventArgs e)
+	{
+		doorClosedCheck.Checked = doorClosedInput.Value == 1;
+		WriteByteToMMF(10, (int)doorClosedInput.Value);
+	}
+
+	private void ShockLeftCheckClickHandler(object sender, EventArgs e)
+	{
+		shockLeftInput.Value = shockLeftCheck.Checked ? 1 : 0;
+	}
+
+	private void ShockLeftInputValueChangedHandler(object sender, EventArgs e)
+	{
+		shockLeftCheck.Checked = shockLeftInput.Value == 1;
+		WriteByteToMMF(11, (int)shockLeftInput.Value);
+	}
+
+	private void ShockRightCheckClickHandler(object sender, EventArgs e)
+	{
+		shockRightInput.Value = shockRightCheck.Checked ? 1 : 0;
+	}
+
+	private void ShockRightInputValueChangedHandler(object sender, EventArgs e)
+	{
+		shockRightCheck.Checked = shockRightInput.Value == 1;
+		WriteByteToMMF(12, (int)shockRightInput.Value);
+	}
+
+	private void LedBarScrollHandler(object sender, EventArgs e)
+	{
+		ledInput.Value = ledBar.Value;
+	}
+
+	private void LedInputValueChangedHandler(object sender, EventArgs e)
+	{
+		ledBar.Value = Math.Min((int)ledInput.Value, ledBar.Maximum);
+		WriteByteToMMF(13, (int)ledInput.Value);
+	}
+
+	private void AtcBarScrollHandler(object sender, EventArgs e)
+	{
+		if (!atcOffCheck.Checked) atcInput.Value = atcBar.Value;
+	}
+
+	private void AtcOffCheckClickHandler(object sender, EventArgs e)
+	{
+		atcInput.Value = atcOffCheck.Checked ? 65535 : atcBar.Value;
+	}
+
+	private void AtcInputValueChangedHandler(object sender, EventArgs e)
+	{
+		if (atcInput.Value <= atcBar.Maximum) atcBar.Value = (int)atcInput.Value;
+		atcOffCheck.Checked = atcInput.Value > 999;
+		WriteWordToMMF(14, (int)atcInput.Value);
+	}
+
+	private void SpeedBarScrollHandler(object sender, EventArgs e)
+	{
+		speedInput.Value = speedBar.Value;
+	}
+
+	private void SpeedInputValueChangedHandler(object sender, EventArgs e)
+	{
+		speedBar.Value = Math.Min((int)speedInput.Value, speedBar.Maximum);
+		WriteWordToMMF(16, (int)speedInput.Value);
+	}
+
 	private void MmfPollingTimerTickHandler(object sender, EventArgs e)
 	{
 		Mutex mutexToLock = lockMutex ? mutex : null;
@@ -631,5 +736,12 @@ class DensyaRelay: Form
 		controllerPowerInput.Value = mmfData[2] / 10;
 		controllerBrakeInput.Value = mmfData[2] % 10;
 		extBrakeInput.Value = mmfData[3];
+
+		doorClosedInput.Value = mmfData[10];
+		shockLeftInput.Value = mmfData[11];
+		shockRightInput.Value = mmfData[12];
+		ledInput.Value = mmfData[13];
+		atcInput.Value = mmfData[14] + mmfData[15] * 256;
+		speedInput.Value = mmfData[16] + mmfData[17] * 256;
 	}
 }
