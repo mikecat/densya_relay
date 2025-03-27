@@ -404,10 +404,10 @@ class DensyaRelay: Form
 		brakeInput.ValueChanged += BrakeInputValueChangedHandler;
 		powerBar.Scroll += PowerBarScrollHandler;
 		powerInput.ValueChanged += PowerInputValueChangedHandler;
-		controllerSanyoRadio.CheckedChanged += ControllerRadioCheckedChangedHandler;
-		controllerReversedSanyoRadio.CheckedChanged += ControllerRadioCheckedChangedHandler;
-		controllerRyojoRadio.CheckedChanged += ControllerRadioCheckedChangedHandler;
-		controllerOtherRadio.CheckedChanged += ControllerRadioCheckedChangedHandler;
+		controllerSanyoRadio.Click += ControllerRadioClickHandler;
+		controllerReversedSanyoRadio.Click += ControllerRadioClickHandler;
+		controllerRyojoRadio.Click += ControllerRadioClickHandler;
+		controllerOtherRadio.Click += ControllerRadioClickHandler;
 		controllerPowerInput.ValueChanged += ControllerInputValueChangedHandler;
 		controllerBrakeInput.ValueChanged += ControllerInputValueChangedHandler;
 		extBrakeBar.Scroll += ExtBrakeBarScrollHandler;
@@ -564,9 +564,8 @@ class DensyaRelay: Form
 		WriteByteToMMF(1, (int)powerInput.Value);
 	}
 
-	private void ControllerRadioCheckedChangedHandler(object sender, EventArgs e)
+	private void ControllerRadioClickHandler(object sender, EventArgs e)
 	{
-		if (!((RadioButton)sender).Checked) return;
 		if (controllerSanyoRadio.Checked)
 		{
 			controllerPowerInput.Value = 0;
