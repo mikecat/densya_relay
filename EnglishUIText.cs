@@ -7,8 +7,8 @@ class EnglishUIText: UIText
 
 	public override string Network { get { return "Network"; }}
 	public override string NetworkOff { get { return "Off"; }}
-	public override string NetworkSend { get { return "TX (with converter)"; }}
-	public override string NetworkReceive { get { return "RX (with game)"; }}
+	public override string NetworkSend { get { return "TX (converter side)"; }}
+	public override string NetworkReceive { get { return "RX (game side)"; }}
 	public override string NetworkPeerAddress { get { return "Peer Address"; }}
 	public override string NetworkPort { get { return "Port"; }}
 	public override string NetworkPreferIPv6 { get { return "Prefer IPv6"; }}
