@@ -208,7 +208,7 @@ class DensyaRelay: Form
 		extBrakeBar.Minimum = 0;
 		extBrakeBar.Maximum = 255;
 		extBrakeBar.SmallChange = 1;
-		extBrakeBar.LargeChange = 30;
+		extBrakeBar.LargeChange = 1;
 		extBrakeInput = ControlUtils.CreateControl<NumericUpDown>(sendingGroup, 26.5f, 5.5f, 3, 1);
 		extBrakeInput.Minimum = 0;
 		extBrakeInput.Maximum = 255;
@@ -242,7 +242,7 @@ class DensyaRelay: Form
 		atcBar.Minimum = 0;
 		atcBar.Maximum = 999;
 		atcBar.SmallChange = 1;
-		atcBar.LargeChange = 10;
+		atcBar.LargeChange = 1;
 		atcOffCheck = ControlUtils.CreateControl<CheckBox>(receivingGroup, 22.5f, 4, 3, 1);
 		atcInput = ControlUtils.CreateControl<NumericUpDown>(receivingGroup, 25.5f, 4, 4, 1);
 		atcInput.Minimum = 0;
@@ -252,7 +252,7 @@ class DensyaRelay: Form
 		speedBar.Minimum = 0;
 		speedBar.Maximum = 999;
 		speedBar.SmallChange = 1;
-		speedBar.LargeChange = 10;
+		speedBar.LargeChange = 1;
 		speedInput = ControlUtils.CreateControl<NumericUpDown>(receivingGroup, 25.5f, 5.5f, 4, 1);
 		speedInput.Minimum = 0;
 		speedInput.Maximum = 65535;
