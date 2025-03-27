@@ -194,6 +194,7 @@ class DensyaRelay: Form
 		controllerReversedSanyoRadio = ControlUtils.CreateControl<RadioButton>(controllerRadioPanel, 4, 0, 6, 1);
 		controllerRyojoRadio = ControlUtils.CreateControl<RadioButton>(controllerRadioPanel, 10, 0, 4, 1);
 		controllerOtherRadio = ControlUtils.CreateControl<RadioButton>(controllerRadioPanel, 14, 0, 4, 1);
+		controllerOtherRadio.Checked = true;
 		controllerRadioPanel.ResumeLayout();
 		controllerPowerLabel = ControlUtils.CreateControl<Label>(sendingGroup, 23.5f, 4, 1, 1);
 		controllerPowerInput = ControlUtils.CreateControl<NumericUpDown>(sendingGroup, 24.5f, 4, 2, 1);
