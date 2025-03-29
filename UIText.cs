@@ -14,6 +14,10 @@ abstract class UIText
 	public abstract string NetworkPreferIPv6 { get; }
 	public abstract string NetworkLastReceive { get; }
 	public abstract string OpenKeySendWindow { get; }
+	public abstract string ConnectionErrorTitle { get; }
+	public abstract string ConnectionErrorMessage { get; }
+	public abstract string DestinationAddressNotSetTitle { get; }
+	public abstract string DestinationAddressNotSetMessage { get; }
 
 	public abstract string SendingData { get; }
 	public abstract string Brake { get; }

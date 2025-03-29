@@ -14,6 +14,10 @@ class JapaneseUIText: UIText
 	public override string NetworkPreferIPv6 { get { return "IPv6優先"; }}
 	public override string NetworkLastReceive { get { return "最終受信："; }}
 	public override string OpenKeySendWindow { get { return "キー送信ウィンドウを開く"; }}
+	public override string ConnectionErrorTitle { get { return "エラー"; }}
+	public override string ConnectionErrorMessage { get { return "ソケットの初期化に失敗しました。\n接続先を確認してください。"; }}
+	public override string DestinationAddressNotSetTitle { get { return "エラー"; }}
+	public override string DestinationAddressNotSetMessage { get { return "通信相手アドレスを入力してください。"; }}
 
 	public override string SendingData { get { return "送信情報"; }}
 	public override string Brake { get { return "ブレーキ"; }}

@@ -4,6 +4,8 @@ using System.Windows.Forms;
 
 class AdvancedConfiguration: Form
 {
+	private bool enablePortSettings;
+
 	private GroupBox networkGroup;
 	private Label localPortLabel;
 	private NumericUpDown localPortInput;
@@ -65,8 +67,9 @@ class AdvancedConfiguration: Form
 		set { mutexNameInput.Text = value; }
 	}
 
-	public AdvancedConfiguration(UIText uiText)
+	public AdvancedConfiguration(UIText uiText, bool enablePortSettings)
 	{
+		this.enablePortSettings = enablePortSettings;
 		this.Text = uiText.AdvancedConfigurationDialogTitle;
 		this.Font = ControlUtils.Font;
 		this.FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -84,8 +87,10 @@ class AdvancedConfiguration: Form
 		localPortInput = ControlUtils.CreateControl<NumericUpDown>(networkGroup, 7.5f, 1, 4, 1);
 		localPortInput.Minimum = 0;
 		localPortInput.Maximum = 65535;
+		localPortInput.Enabled = enablePortSettings;
 		localPortSameAsDestinationPortCheck = ControlUtils.CreateControl<CheckBox>(networkGroup, 12, 1, 10, 1);
 		localPortSameAsDestinationPortCheck.Text = uiText.SameAsDestinationPort;
+		localPortSameAsDestinationPortCheck.Enabled = enablePortSettings;
 		sendSizeLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 2.5f, 7, 1);
 		sendSizeLabel.Text = uiText.SendSize;
 		sendSizeInput = ControlUtils.CreateControl<NumericUpDown>(networkGroup, 7.5f, 2.5f, 4, 1);
@@ -135,7 +140,7 @@ class AdvancedConfiguration: Form
 
 	private void LocalPortSameAsDestinationPortCheckCheckedChangedHandler(object sender, EventArgs e)
 	{
-		localPortInput.Enabled = !localPortSameAsDestinationPortCheck.Checked;
+		localPortInput.Enabled = enablePortSettings && !localPortSameAsDestinationPortCheck.Checked;
 	}
 
 	private void CreateMutexCheckCheckedChangedHandler(object sender, EventArgs e)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO.MemoryMappedFiles;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
@@ -41,6 +42,8 @@ class DensyaRelay: Form
 	private bool lockMutex = false;
 	private string mutexName = "TSXMUTEX";
 
+	private UdpClient udpClient = null;
+	private bool isSenderMode = false;
 	private MemoryMappedFile mmf = null;
 	private MemoryMappedViewAccessor mmfView = null;
 	private Mutex mutex = null;
@@ -152,8 +155,11 @@ class DensyaRelay: Form
 		networkModeRadioPanel.SuspendLayout();
 		networkOffRadio = ControlUtils.CreateControl<RadioButton>(networkModeRadioPanel, 0, 0, 4, 1);
 		networkOffRadio.Checked = true;
+		networkOffRadio.AutoCheck = false;
 		networkSendRadio = ControlUtils.CreateControl<RadioButton>(networkModeRadioPanel, 4, 0, 9, 1);
+		networkSendRadio.AutoCheck = false;
 		networkReceiveRadio = ControlUtils.CreateControl<RadioButton>(networkModeRadioPanel, 13, 0, 9, 1);
+		networkReceiveRadio.AutoCheck = false;
 		networkModeRadioPanel.ResumeLayout();
 		networkPeerAddressLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 2.5f, 7, 1);
 		networkPeerAddressInput = ControlUtils.CreateControl<TextBox>(networkGroup, 7.5f, 2.5f, 8.5f, 1);
@@ -401,6 +407,10 @@ class DensyaRelay: Form
 			mutex = new Mutex(false, mutexName);
 		}
 
+		networkOffRadio.Click += NetworkOffRadioClickHandler;
+		networkSendRadio.Click += NetworkConnectRadioClickHandler;
+		networkReceiveRadio.Click += NetworkConnectRadioClickHandler;
+
 		brakeBar.Scroll += BrakeBarScrollHandler;
 		brakeInput.ValueChanged += BrakeInputValueChangedHandler;
 		powerBar.Scroll += PowerBarScrollHandler;
@@ -453,6 +463,12 @@ class DensyaRelay: Form
 			regIO.Close();
 		}
 
+		if (udpClient != null)
+		{
+			udpClient.Close();
+			udpClient.Dispose();
+			udpClient = null;
+		}
 		if (mmfPollingTimer != null) mmfPollingTimer.Stop();
 		if (mutex != null) mutex.Dispose();
 		mutex = null;
@@ -477,7 +493,8 @@ class DensyaRelay: Form
 
 	private void AdvancedConfigurationMenuClickHandler(object sender, EventArgs e)
 	{
-		AdvancedConfiguration dialog = new AdvancedConfiguration(uiText);
+		bool enablePortConfiguration = udpClient == null;
+		AdvancedConfiguration dialog = new AdvancedConfiguration(uiText, enablePortConfiguration);
 		dialog.LocalPort = localPort;
 		dialog.LocalPortSameAsDestinationPort = localPortSameAsDestinationPort;
 		dialog.SendSize = sendDataSize;
@@ -492,8 +509,11 @@ class DensyaRelay: Form
 			string oldMmfName = mmfName;
 			string oldMutexName = mutexName;
 
-			localPort = dialog.LocalPort;
-			localPortSameAsDestinationPort = dialog.LocalPortSameAsDestinationPort;
+			if (enablePortConfiguration)
+			{
+				localPort = dialog.LocalPort;
+				localPortSameAsDestinationPort = dialog.LocalPortSameAsDestinationPort;
+			}
 			sendDataSize = dialog.SendSize;
 			receiveDataSize = dialog.ReceiveSize;
 			mmfName = dialog.MmfName;
@@ -501,7 +521,6 @@ class DensyaRelay: Form
 			lockMutex = dialog.LockMutex;
 			mutexName = dialog.MutexName;
 
-			// TODO: ネットワークの設定を反映
 			if (mmfName != oldMmfName)
 			{
 				if (mmf != null) mmf.Dispose();
@@ -537,6 +556,82 @@ class DensyaRelay: Form
 			}
 		}
 		dialog.Dispose();
+	}
+
+	private void NetworkOffRadioClickHandler(object sender, EventArgs e)
+	{
+		if (udpClient != null)
+		{
+			udpClient.Close();
+			udpClient.Dispose();
+			udpClient = null;
+		}
+		networkOffRadio.Checked = true;
+		networkSendRadio.Checked = false;
+		networkReceiveRadio.Checked = false;
+		networkPeerAddressInput.Enabled = true;
+		networkPortInput.Enabled = true;
+		preferIPv6Check.Enabled = true;
+	}
+
+	private void NetworkConnectRadioClickHandler(object sender, EventArgs e)
+	{
+		if (udpClient == null)
+		{
+			string destinationHostName = networkPeerAddressInput.Text;
+			if (destinationHostName == "")
+			{
+				MessageBox.Show(
+					this,
+					uiText.DestinationAddressNotSetMessage,
+					uiText.DestinationAddressNotSetTitle,
+					MessageBoxButtons.OK,
+					MessageBoxIcon.Warning
+				);
+				return;
+			}
+			UdpClient newUdpClient = null;
+			int destinationPort = (int)networkPortInput.Value;
+			int localPortToUse = localPortSameAsDestinationPort ? destinationPort : localPort;
+			for (int i = 0; i < 2 && newUdpClient == null; i++)
+			{
+				try
+				{
+					newUdpClient = new UdpClient(
+						localPortToUse,
+						i == (preferIPv6Check.Checked ? 0 : 1)
+							? AddressFamily.InterNetworkV6
+							: AddressFamily.InterNetwork
+					);
+					newUdpClient.Connect(destinationHostName, destinationPort);
+				}
+				catch (Exception)
+				{
+					if (newUdpClient != null) newUdpClient.Dispose();
+					newUdpClient = null;
+				}
+			}
+			if (newUdpClient == null)
+			{
+				MessageBox.Show(
+					this,
+					uiText.ConnectionErrorMessage,
+					uiText.ConnectionErrorTitle,
+					MessageBoxButtons.OK,
+					MessageBoxIcon.Error
+				);
+				return;
+			}
+			udpClient = newUdpClient;
+		}
+		networkPeerAddressInput.Enabled = false;
+		networkPortInput.Enabled = false;
+		preferIPv6Check.Enabled = false;
+		isSenderMode = sender == networkSendRadio;
+		networkOffRadio.Checked = false;
+		networkSendRadio.Checked = false;
+		networkReceiveRadio.Checked = false;
+		((RadioButton)sender).Checked = true;
 	}
 
 	private void WriteByteToMMF(int idx, int value)

@@ -14,6 +14,10 @@ class EnglishUIText: UIText
 	public override string NetworkPreferIPv6 { get { return "Prefer IPv6"; }}
 	public override string NetworkLastReceive { get { return "Last received："; }}
 	public override string OpenKeySendWindow { get { return "Open Send Key Window"; }}
+	public override string ConnectionErrorTitle { get { return "Error"; }}
+	public override string ConnectionErrorMessage { get { return "Failed to initialize the socket.\nPlease check your peer address."; }}
+	public override string DestinationAddressNotSetTitle { get { return "Error"; }}
+	public override string DestinationAddressNotSetMessage { get { return "Please enter your peer address."; }}
 
 	public override string SendingData { get { return "Data Sent"; }}
 	public override string Brake { get { return "Brake"; }}
