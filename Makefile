@@ -3,7 +3,8 @@ OPTIONS= \
 	/target:winexe \
 	/optimize+ \
 	/warn:4 \
-	/codepage:65001
+	/codepage:65001 \
+	/win32icon:train_bridge.ico
 
 SOURCES= \
 	AssemblyInfo.cs \

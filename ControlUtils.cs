@@ -6,6 +6,8 @@ class ControlUtils
 	private const int fontSize = 16, gridSize = 20;
 	private static Font _Font = new Font("MS UI Gothic", fontSize, GraphicsUnit.Pixel);
 	public static Font Font { get { return _Font; }}
+	private static Icon _Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+	public static Icon Icon { get { return _Icon; }}
 
 	public static Size GetSizeOnGrid(float width, float height)
 	{

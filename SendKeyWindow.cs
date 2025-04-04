@@ -17,6 +17,7 @@ class SendKeyWindow: Form
 		this.Font = ControlUtils.Font;
 		this.MaximizeBox = false;
 		this.MinimizeBox = false;
+		this.Icon = ControlUtils.Icon;
 		this.ShowInTaskbar = false;
 		this.ClientSize = ControlUtils.GetSizeOnGrid(20, 5);
 

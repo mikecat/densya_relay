@@ -138,6 +138,7 @@ class DensyaRelay: Form
 		this.Font = ControlUtils.Font;
 		this.FormBorderStyle = FormBorderStyle.FixedSingle;
 		this.MaximizeBox = false;
+		this.Icon = ControlUtils.Icon;
 		SuspendLayout();
 
 		mainMenuStrip = new MenuStrip();

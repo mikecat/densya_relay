@@ -75,6 +75,7 @@ class AdvancedConfiguration: Form
 		this.FormBorderStyle = FormBorderStyle.FixedSingle;
 		this.MaximizeBox = false;
 		this.MinimizeBox = false;
+		this.Icon = ControlUtils.Icon;
 		this.ShowInTaskbar = false;
 		this.ClientSize = ControlUtils.GetSizeOnGrid(24, 14.5f);
 		SuspendLayout();
