@@ -13,6 +13,10 @@ class EnglishUIText: UIText
 	public override string NetworkPort { get { return "Port"; }}
 	public override string NetworkPreferIPv6 { get { return "Prefer IPv6"; }}
 	public override string NetworkLastReceive { get { return "Last received："; }}
+	public override string LastReceiveFewSeconds { get { return "a few seconds or less ago"; }}
+	public override string LastReceiveSecondsPrefix { get { return ""; }}
+	public override string LastReceiveSecondsSuffix { get { return " seconds ago"; }}
+	public override string LastReceiveOneMinute { get { return "1 minute or longer ago"; }}
 	public override string OpenKeySendWindow { get { return "Open Send Key Window"; }}
 	public override string ConnectionErrorTitle { get { return "Error"; }}
 	public override string ConnectionErrorMessage { get { return "Failed to initialize the socket.\nPlease check your peer address."; }}

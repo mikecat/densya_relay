@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
@@ -59,6 +60,8 @@ class DensyaRelay: Form
 	private ushort? dataReceivedSerial = null;
 	private byte[] prevData = null;
 	private SortedSet<int> pressedKeySet = new SortedSet<int>();
+	private Stopwatch stopwatchFromLastSend = new Stopwatch();
+	private Stopwatch stopwatchFromLastReceived = new Stopwatch();
 
 	private UIText uiText;
 	private string versionString = "";
@@ -80,6 +83,7 @@ class DensyaRelay: Form
 	private NumericUpDown networkPortInput;
 	private CheckBox preferIPv6Check;
 	private Label networkLastReceiveLabel;
+	private Label networkLastReceiveTimeLabel;
 	private Button openKeySendWindowButton;
 
 	private GroupBox sendingGroup;
@@ -180,7 +184,8 @@ class DensyaRelay: Form
 		networkPortInput.Maximum = 65535;
 		networkPortInput.Value = localPort;
 		preferIPv6Check = ControlUtils.CreateControl<CheckBox>(networkGroup, 23.5f, 2.5f, 5.5f, 1);
-		networkLastReceiveLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 4, 19, 1.5f);
+		networkLastReceiveLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 4, 6, 1.5f);
+		networkLastReceiveTimeLabel = ControlUtils.CreateControl<Label>(networkGroup, 6.5f, 4, 13, 1.5f);
 		openKeySendWindowButton = ControlUtils.CreateControl<Button>(networkGroup, 19.5f, 4, 10, 1.5f);
 		openKeySendWindowButton.Enabled = false;
 		networkGroup.ResumeLayout();
@@ -661,6 +666,8 @@ class DensyaRelay: Form
 			sendKeyWindow.Close();
 			sendKeyWindow = null;
 		}
+		stopwatchFromLastSend.Stop();
+		stopwatchFromLastReceived.Stop();
 		networkOffRadio.Checked = true;
 		networkSendRadio.Checked = false;
 		networkReceiveRadio.Checked = false;
@@ -679,6 +686,8 @@ class DensyaRelay: Form
 			dataSentSerial = newSenderMode ? 0 : (ushort?)null;
 			dataReceivedSerial = newSenderMode ? (ushort?)null : 0;
 			prevData = null;
+			stopwatchFromLastSend.Stop();
+			stopwatchFromLastReceived.Stop();
 		}
 		if (udpClient == null)
 		{
@@ -833,6 +842,7 @@ class DensyaRelay: Form
 	{
 		if (task.Status == TaskStatus.RanToCompletion)
 		{
+			stopwatchFromLastReceived.Restart();
 			OnUdpMessageReceive(task.Result.Buffer);
 		}
 		if (udpClient != null) udpClient.ReceiveAsync().ContinueWith(OnUdpClientReceive);
@@ -840,7 +850,11 @@ class DensyaRelay: Form
 
 	private void SendUdpMessage(byte[] message)
 	{
-		if (udpClient != null) udpClient.Send(message, message.Length);
+		if (udpClient != null)
+		{
+			udpClient.Send(message, message.Length);
+			stopwatchFromLastSend.Restart();
+		}
 	}
 
 	private void OnUdpMessageReceive(byte[] message)
@@ -1117,7 +1131,7 @@ class DensyaRelay: Form
 				dataToSendSize = Math.Min(receiveDataSize, MMF_SIZE - MMF_RECEIVED_DATA_START);
 			}
 			byte[] currentData = mmfData.Skip(dataToSendOffset).Take(dataToSendSize).ToArray();
-			if (prevData == null || !currentData.SequenceEqual(prevData))
+			if (prevData == null || !currentData.SequenceEqual(prevData) || stopwatchFromLastSend.ElapsedMilliseconds >= 1000)
 			{
 				if (isSenderMode)
 				{
@@ -1136,6 +1150,35 @@ class DensyaRelay: Form
 				}
 				prevData = currentData;
 			}
+			if (stopwatchFromLastReceived.IsRunning)
+			{
+				long elapsedSeconds = stopwatchFromLastReceived.ElapsedMilliseconds / 1000;
+				if (elapsedSeconds < 5)
+				{
+					networkLastReceiveTimeLabel.Text = uiText.LastReceiveFewSeconds;
+				}
+				else if (elapsedSeconds < 60)
+				{
+					networkLastReceiveTimeLabel.Text = string.Format(
+						"{0}{1}{2}",
+						uiText.LastReceiveSecondsPrefix,
+						elapsedSeconds,
+						uiText.LastReceiveSecondsSuffix
+					);
+				}
+				else
+				{
+					networkLastReceiveTimeLabel.Text = uiText.LastReceiveOneMinute;
+				}
+			}
+			else
+			{
+				networkLastReceiveTimeLabel.Text = "";
+			}
+		}
+		else
+		{
+			networkLastReceiveTimeLabel.Text = "";
 		}
 	}
 }

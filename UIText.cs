@@ -13,6 +13,10 @@ abstract class UIText
 	public abstract string NetworkPort { get; }
 	public abstract string NetworkPreferIPv6 { get; }
 	public abstract string NetworkLastReceive { get; }
+	public abstract string LastReceiveFewSeconds { get; }
+	public abstract string LastReceiveSecondsPrefix { get; }
+	public abstract string LastReceiveSecondsSuffix { get; }
+	public abstract string LastReceiveOneMinute { get; }
 	public abstract string OpenKeySendWindow { get; }
 	public abstract string ConnectionErrorTitle { get; }
 	public abstract string ConnectionErrorMessage { get; }

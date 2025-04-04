@@ -13,6 +13,10 @@ class JapaneseUIText: UIText
 	public override string NetworkPort { get { return "ポート"; }}
 	public override string NetworkPreferIPv6 { get { return "IPv6優先"; }}
 	public override string NetworkLastReceive { get { return "最終受信："; }}
+	public override string LastReceiveFewSeconds { get { return "数秒以内前"; }}
+	public override string LastReceiveSecondsPrefix { get { return ""; }}
+	public override string LastReceiveSecondsSuffix { get { return "秒前"; }}
+	public override string LastReceiveOneMinute { get { return "1分以上前"; }}
 	public override string OpenKeySendWindow { get { return "キー送信ウィンドウを開く"; }}
 	public override string ConnectionErrorTitle { get { return "エラー"; }}
 	public override string ConnectionErrorMessage { get { return "ソケットの初期化に失敗しました。\n接続先を確認してください。"; }}
