@@ -57,4 +57,7 @@ class EnglishUIText: UIText
 
 	public override string OK { get { return "OK"; }}
 	public override string Cancel { get { return "Cancel"; }}
+
+	public override string SendKeyWindowTitle { get { return "Send Key Window"; }}
+	public override string SendKeyWindowMessage { get { return "Actions with keys in this window\nwill be transferred to the RX side."; }}
 }

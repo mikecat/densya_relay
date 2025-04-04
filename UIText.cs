@@ -57,4 +57,7 @@ abstract class UIText
 
 	public abstract string OK { get; }
 	public abstract string Cancel { get; }
+
+	public abstract string SendKeyWindowTitle { get; }
+	public abstract string SendKeyWindowMessage { get; }
 }

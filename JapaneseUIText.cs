@@ -57,4 +57,7 @@ class JapaneseUIText: UIText
 
 	public override string OK { get { return "OK"; }}
 	public override string Cancel { get { return "キャンセル"; }}
+
+	public override string SendKeyWindowTitle { get { return "キー送信ウィンドウ"; }}
+	public override string SendKeyWindowMessage { get { return "このウィンドウでキー操作を行うと、\n受信側に転送されます。"; }}
 }

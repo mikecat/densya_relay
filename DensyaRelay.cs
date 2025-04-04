@@ -5,6 +5,7 @@ using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -53,9 +54,11 @@ class DensyaRelay: Form
 	private MemoryMappedViewAccessor mmfView = null;
 	private Mutex mutex = null;
 	private System.Windows.Forms.Timer mmfPollingTimer;
+	private SendKeyWindow sendKeyWindow = null;
 	private ushort? dataSentSerial = null;
 	private ushort? dataReceivedSerial = null;
 	private byte[] prevData = null;
+	private SortedSet<int> pressedKeySet = new SortedSet<int>();
 
 	private UIText uiText;
 	private string versionString = "";
@@ -179,6 +182,7 @@ class DensyaRelay: Form
 		preferIPv6Check = ControlUtils.CreateControl<CheckBox>(networkGroup, 23.5f, 2.5f, 5.5f, 1);
 		networkLastReceiveLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 4, 19, 1.5f);
 		openKeySendWindowButton = ControlUtils.CreateControl<Button>(networkGroup, 19.5f, 4, 10, 1.5f);
+		openKeySendWindowButton.Enabled = false;
 		networkGroup.ResumeLayout();
 
 		sendingGroup = ControlUtils.CreateControl<GroupBox>(mainPanel, 0.5f, 7, 30, 7);
@@ -418,6 +422,7 @@ class DensyaRelay: Form
 		networkOffRadio.Click += NetworkOffRadioClickHandler;
 		networkSendRadio.Click += NetworkConnectRadioClickHandler;
 		networkReceiveRadio.Click += NetworkConnectRadioClickHandler;
+		openKeySendWindowButton.Click += OpenKeySendWindowButtonClickHandler;
 
 		brakeBar.Scroll += BrakeBarScrollHandler;
 		brakeInput.ValueChanged += BrakeInputValueChangedHandler;
@@ -454,6 +459,7 @@ class DensyaRelay: Form
 
 	private void FormClosedHandler(object sender, EventArgs e)
 	{
+		ClearKeyControl();
 		RegistryIO regIO = RegistryIO.OpenForWrite();
 		if (regIO != null)
 		{
@@ -497,6 +503,7 @@ class DensyaRelay: Form
 			uiText = new EnglishUIText();
 		}
 		SetControlTexts();
+		if (sendKeyWindow != null) sendKeyWindow.UpdateUIText(uiText);
 	}
 
 	private void AdvancedConfigurationMenuClickHandler(object sender, EventArgs e)
@@ -566,13 +573,93 @@ class DensyaRelay: Form
 		dialog.Dispose();
 	}
 
+	private const uint INPUT_KEYBOARD = 1;
+	private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
+	private const uint KEYEVENTF_KEYUP = 0x0002;
+	private struct Input
+	{
+		public UIntPtr type; // リトルエンディアンを仮定する
+		public ushort wVk;
+		public ushort wScan;
+		public uint dwFlags;
+		public uint time;
+		public UIntPtr dwExtraInfo;
+		// パディングの値は使用しないので、「使用されていない」警告を抑制する
+		#pragma warning disable 0169
+		private int padding1, padding2;
+		#pragma warning restore 0169
+	}
+
+	[DllImport("User32.dll", EntryPoint="SendInput")]
+	private static extern uint SendInput(uint cInputs, [In] Input[] pInputs, int cbSize);
+
+	private void UpdateKeyStatus(SortedSet<int> newPressedKeySet)
+	{
+		List<Input> deltaList = new List<Input>();
+		foreach (int pressedKey in pressedKeySet)
+		{
+			if (!newPressedKeySet.Contains(pressedKey))
+			{
+				deltaList.Add(new Input {
+					type = (UIntPtr)INPUT_KEYBOARD,
+					wVk = (ushort)((pressedKey >> 16) & 0xff),
+					wScan = (ushort)((pressedKey >> 8) & 0xff),
+					dwFlags = KEYEVENTF_KEYUP | ((pressedKey & 1) != 0 ? KEYEVENTF_EXTENDEDKEY : 0),
+					time = 0,
+					dwExtraInfo = UIntPtr.Zero,
+				});
+			}
+		}
+		foreach (int pressedKey in newPressedKeySet)
+		{
+			if (!pressedKeySet.Contains(pressedKey))
+			{
+				deltaList.Add(new Input {
+					type = (UIntPtr)INPUT_KEYBOARD,
+					wVk = (ushort)((pressedKey >> 16) & 0xff),
+					wScan = (ushort)((pressedKey >> 8) & 0xff),
+					dwFlags = (pressedKey & 1) != 0 ? KEYEVENTF_EXTENDEDKEY : 0,
+					time = 0,
+					dwExtraInfo = UIntPtr.Zero,
+				});
+			}
+		}
+		if (deltaList.Count > 0)
+		{
+			SendInput((uint)deltaList.Count, deltaList.ToArray(), Marshal.SizeOf(deltaList[0]));
+		}
+		pressedKeySet = newPressedKeySet;
+	}
+
+	private void ClearKeyControl()
+	{
+		if (udpClient != null)
+		{
+			if (isSenderMode)
+			{
+				pressedKeySet.Clear();
+				SendSenderMessage(prevData);
+			}
+			else
+			{
+				UpdateKeyStatus(new SortedSet<int>());
+			}
+		}
+	}
+
 	private void NetworkOffRadioClickHandler(object sender, EventArgs e)
 	{
+		ClearKeyControl();
 		if (udpClient != null)
 		{
 			udpClient.Close();
 			udpClient.Dispose();
 			udpClient = null;
+		}
+		if (sendKeyWindow != null)
+		{
+			sendKeyWindow.Close();
+			sendKeyWindow = null;
 		}
 		networkOffRadio.Checked = true;
 		networkSendRadio.Checked = false;
@@ -580,6 +667,7 @@ class DensyaRelay: Form
 		networkPeerAddressInput.Enabled = true;
 		networkPortInput.Enabled = true;
 		preferIPv6Check.Enabled = true;
+		openKeySendWindowButton.Enabled = false;
 	}
 
 	private void NetworkConnectRadioClickHandler(object sender, EventArgs e)
@@ -587,6 +675,7 @@ class DensyaRelay: Form
 		bool newSenderMode = sender == networkSendRadio;
 		if (udpClient == null || newSenderMode != isSenderMode)
 		{
+			ClearKeyControl();
 			dataSentSerial = newSenderMode ? 0 : (ushort?)null;
 			dataReceivedSerial = newSenderMode ? (ushort?)null : 0;
 			prevData = null;
@@ -648,6 +737,96 @@ class DensyaRelay: Form
 		networkSendRadio.Checked = false;
 		networkReceiveRadio.Checked = false;
 		((RadioButton)sender).Checked = true;
+		openKeySendWindowButton.Enabled = isSenderMode && sendKeyWindow == null;
+		if (!isSenderMode && sendKeyWindow != null)
+		{
+			sendKeyWindow.Close();
+			sendKeyWindow = null;
+		}
+	}
+
+	private void OpenKeySendWindowButtonClickHandler(object sender, EventArgs e)
+	{
+		if (udpClient != null && isSenderMode && sendKeyWindow == null)
+		{
+			openKeySendWindowButton.Enabled = false;
+			sendKeyWindow = new SendKeyWindow(uiText);
+			sendKeyWindow.Closed += SendKeyWindowClosedHandler;
+			sendKeyWindow.Leave += SendKeyWindowLeaveHandler;
+			sendKeyWindow.KeyMessage += SendKeyWindowKeyMessageHandler;
+			sendKeyWindow.Owner = this;
+			sendKeyWindow.Show();
+		}
+	}
+
+	private void SendKeyWindowClosedHandler(object sender, EventArgs e)
+	{
+		openKeySendWindowButton.Enabled = udpClient != null && isSenderMode;
+		sendKeyWindow.Dispose();
+		sendKeyWindow = null;
+		if (udpClient != null && isSenderMode && pressedKeySet.Count > 0)
+		{
+			pressedKeySet.Clear();
+			SendSenderMessage(prevData);
+		}
+	}
+
+	private void SendKeyWindowLeaveHandler(object sender, EventArgs e)
+	{
+		if (udpClient != null && isSenderMode && pressedKeySet.Count > 0)
+		{
+			pressedKeySet.Clear();
+			SendSenderMessage(prevData);
+		}
+	}
+
+	private void SendKeyWindowKeyMessageHandler(byte keyCode, byte scanCode, bool isExtKey, bool pressed)
+	{
+		if (udpClient != null && isSenderMode)
+		{
+			int code = (keyCode << 16) | (scanCode << 8) | (isExtKey ? 1 : 0);
+			if (pressed)
+			{
+				if (!pressedKeySet.Contains(code))
+				{
+					pressedKeySet.Add(code);
+					SendSenderMessage(prevData);
+				}
+			}
+			else
+			{
+				if (pressedKeySet.Contains(code))
+				{
+					pressedKeySet.Remove(code);
+					SendSenderMessage(prevData);
+				}
+			}
+		}
+	}
+
+	private void SendSenderMessage(byte[] currentData)
+	{
+		if (currentData == null) currentData = new byte[0];
+		int numKeySet = Math.Min(pressedKeySet.Count, 255);
+		byte[] message = new byte[5 + currentData.Length + 3 * numKeySet];
+		message[0] = 0x00;
+		message[1] = (byte)(dataSentSerial.Value >> 8);
+		message[2] = (byte)dataSentSerial.Value;
+		message[3] = (byte)currentData.Length;
+		currentData.CopyTo(message, 4);
+		message[currentData.Length + 4] = (byte)numKeySet;
+		int keyCount = 0;
+		foreach(int keyInfo in pressedKeySet)
+		{
+			if (keyCount > 255) break;
+			int offset = currentData.Length + 5 + 3 * keyCount;
+			message[offset + 0] = (byte)(keyInfo >> 16);
+			message[offset + 1] = (byte)(keyInfo >> 8);
+			message[offset + 2] = (byte)((keyInfo & 0xff) != 0 ? 1 : 0);
+			keyCount++;
+		}
+		dataSentSerial++;
+		SendUdpMessage(message);
 	}
 
 	private void OnUdpClientReceive(Task<UdpReceiveResult> task)
@@ -698,7 +877,17 @@ class DensyaRelay: Form
 				int keyDataNum = message[payloadLength + 4];
 				if (message.Length < payloadLength + 5 + 3 * keyDataNum) return;
 				WriteBytesToMMF(0, message, 4, Math.Min(payloadLength, MMF_RECEIVED_DATA_START));
-				// TODO：キーの処理
+				SortedSet<int> newPressedKeys = new SortedSet<int>();
+				for (int i = 0; i < keyDataNum; i++)
+				{
+					int offset = payloadLength + 5 + 3 * i;
+					newPressedKeys.Add(
+						(message[offset + 0] << 16) |
+						(message[offset + 1] << 8) |
+						(message[offset + 2] & 1)
+					);
+				}
+				UpdateKeyStatus(newPressedKeys);
 				dataSentSerial = serial;
 			}
 		}
@@ -932,16 +1121,7 @@ class DensyaRelay: Form
 			{
 				if (isSenderMode)
 				{
-					byte[] message = new byte[5 + currentData.Length];
-					message[0] = 0x00;
-					message[1] = (byte)(dataSentSerial.Value >> 8);
-					message[2] = (byte)dataSentSerial.Value;
-					message[3] = (byte)currentData.Length;
-					currentData.CopyTo(message, 4);
-					// TODO：キー情報の送信
-					message[currentData.Length + 4] = 0;
-					dataSentSerial++;
-					SendUdpMessage(message);
+					SendSenderMessage(currentData);
 				}
 				else
 				{

@@ -9,6 +9,7 @@ SOURCES= \
 	AssemblyInfo.cs \
 	DensyaRelay.cs \
 	AdvancedConfiguration.cs \
+	SendKeyWindow.cs \
 	ControlUtils.cs \
 	RegistryIO.cs \
 	UItext.cs \
