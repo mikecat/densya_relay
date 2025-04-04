@@ -39,12 +39,12 @@ class AdvancedConfiguration: Form
 	public int SendSize
 	{
 		get { return (int)sendSizeInput.Value; }
-		set { sendSizeInput.Value = Math.Min(Math.Max(value, 0), 10); }
+		set { sendSizeInput.Value = Math.Min(Math.Max(value, (int)sendSizeInput.Minimum), (int)sendSizeInput.Maximum); }
 	}
 	public int ReceiveSize
 	{
 		get { return (int)receiveSizeInput.Value; }
-		set { receiveSizeInput.Value = Math.Min(Math.Max(value, 0), 54); }
+		set { receiveSizeInput.Value = Math.Min(Math.Max(value, (int)receiveSizeInput.Minimum), (int)receiveSizeInput.Maximum); }
 	}
 	public string MmfName
 	{
@@ -95,14 +95,14 @@ class AdvancedConfiguration: Form
 		sendSizeLabel.Text = uiText.SendSize;
 		sendSizeInput = ControlUtils.CreateControl<NumericUpDown>(networkGroup, 7.5f, 2.5f, 4, 1);
 		sendSizeInput.Minimum = 0;
-		sendSizeInput.Maximum = 10;
+		sendSizeInput.Maximum = DensyaRelay.MMF_RECEIVED_DATA_START;
 		sendSizeUnitLabel = ControlUtils.CreateControl<Label>(networkGroup, 12, 2.5f, 4, 1);
 		sendSizeUnitLabel.Text = uiText.SizeUnit;
 		receiveSizeLabel = ControlUtils.CreateControl<Label>(networkGroup, 0.5f, 4, 7, 1);
 		receiveSizeLabel.Text = uiText.ReceiveSize;
 		receiveSizeInput = ControlUtils.CreateControl<NumericUpDown>(networkGroup, 7.5f, 4, 4, 1);
 		receiveSizeInput.Minimum = 0;
-		receiveSizeInput.Maximum = 54;
+		receiveSizeInput.Maximum = DensyaRelay.MMF_SIZE - DensyaRelay.MMF_RECEIVED_DATA_START;
 		receiveSizeUnitLabel = ControlUtils.CreateControl<Label>(networkGroup, 12, 4, 8, 1);
 		receiveSizeUnitLabel.Text = uiText.SizeUnit;
 		networkGroup.ResumeLayout();

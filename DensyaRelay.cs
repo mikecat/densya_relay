@@ -9,6 +9,9 @@ using System.Windows.Forms;
 
 class DensyaRelay: Form
 {
+	public const int MMF_SIZE = 64;
+	public const int MMF_RECEIVED_DATA_START = 10;
+
 	public static void Main()
 	{
 		Application.EnableVisualStyles();
@@ -359,12 +362,12 @@ class DensyaRelay: Form
 			int? sendDataSizeData = regIO.GetIntValue(SendDataSizeValueName);
 			if (sendDataSizeData.HasValue)
 			{
-				sendDataSize = Math.Min(Math.Max(sendDataSizeData.Value, 0), 10);
+				sendDataSize = Math.Min(Math.Max(sendDataSizeData.Value, 0), MMF_RECEIVED_DATA_START);
 			}
 			int? receiveDataSizeData = regIO.GetIntValue(ReceiveDataSizeValueName);
 			if (receiveDataSizeData.HasValue)
 			{
-				receiveDataSize = Math.Min(Math.Max(receiveDataSizeData.Value, 0), 54);
+				receiveDataSize = Math.Min(Math.Max(receiveDataSizeData.Value, 0), MMF_SIZE - MMF_RECEIVED_DATA_START);
 			}
 			string mmfNameData = regIO.GetStringValue(MmfNameValueName);
 			if (mmfNameData != null)
@@ -400,7 +403,7 @@ class DensyaRelay: Form
 		}
 		SetControlTexts();
 
-		mmf = MemoryMappedFile.CreateOrOpen(mmfName, 64);
+		mmf = MemoryMappedFile.CreateOrOpen(mmfName, MMF_SIZE);
 		mmfView = mmf.CreateViewAccessor();
 		if (createMutex)
 		{
@@ -524,7 +527,7 @@ class DensyaRelay: Form
 			if (mmfName != oldMmfName)
 			{
 				if (mmf != null) mmf.Dispose();
-				mmf = MemoryMappedFile.CreateOrOpen(mmfName, 64);
+				mmf = MemoryMappedFile.CreateOrOpen(mmfName, MMF_SIZE);
 				mmfView = mmf.CreateViewAccessor();
 			}
 			if (createMutex)
@@ -745,7 +748,7 @@ class DensyaRelay: Form
 	private void DoorClosedInputValueChangedHandler(object sender, EventArgs e)
 	{
 		doorClosedCheck.Checked = doorClosedInput.Value == 1;
-		WriteByteToMMF(10, (int)doorClosedInput.Value);
+		WriteByteToMMF(MMF_RECEIVED_DATA_START, (int)doorClosedInput.Value);
 	}
 
 	private void ShockLeftCheckClickHandler(object sender, EventArgs e)
@@ -756,7 +759,7 @@ class DensyaRelay: Form
 	private void ShockLeftInputValueChangedHandler(object sender, EventArgs e)
 	{
 		shockLeftCheck.Checked = shockLeftInput.Value == 1;
-		WriteByteToMMF(11, (int)shockLeftInput.Value);
+		WriteByteToMMF(MMF_RECEIVED_DATA_START + 1, (int)shockLeftInput.Value);
 	}
 
 	private void ShockRightCheckClickHandler(object sender, EventArgs e)
@@ -767,7 +770,7 @@ class DensyaRelay: Form
 	private void ShockRightInputValueChangedHandler(object sender, EventArgs e)
 	{
 		shockRightCheck.Checked = shockRightInput.Value == 1;
-		WriteByteToMMF(12, (int)shockRightInput.Value);
+		WriteByteToMMF(MMF_RECEIVED_DATA_START + 2, (int)shockRightInput.Value);
 	}
 
 	private void LedBarScrollHandler(object sender, EventArgs e)
@@ -778,7 +781,7 @@ class DensyaRelay: Form
 	private void LedInputValueChangedHandler(object sender, EventArgs e)
 	{
 		ledBar.Value = Math.Min((int)ledInput.Value, ledBar.Maximum);
-		WriteByteToMMF(13, (int)ledInput.Value);
+		WriteByteToMMF(MMF_RECEIVED_DATA_START + 3, (int)ledInput.Value);
 	}
 
 	private void AtcBarScrollHandler(object sender, EventArgs e)
@@ -795,7 +798,7 @@ class DensyaRelay: Form
 	{
 		if (atcInput.Value <= atcBar.Maximum) atcBar.Value = (int)atcInput.Value;
 		atcOffCheck.Checked = atcInput.Value > 999;
-		WriteWordToMMF(14, (int)atcInput.Value);
+		WriteWordToMMF(MMF_RECEIVED_DATA_START + 4, (int)atcInput.Value);
 	}
 
 	private void SpeedBarScrollHandler(object sender, EventArgs e)
@@ -806,7 +809,7 @@ class DensyaRelay: Form
 	private void SpeedInputValueChangedHandler(object sender, EventArgs e)
 	{
 		speedBar.Value = Math.Min((int)speedInput.Value, speedBar.Maximum);
-		WriteWordToMMF(16, (int)speedInput.Value);
+		WriteWordToMMF(MMF_RECEIVED_DATA_START + 6, (int)speedInput.Value);
 	}
 
 	private void MmfPollingTimerTickHandler(object sender, EventArgs e)
@@ -823,8 +826,8 @@ class DensyaRelay: Form
 				// 握りつぶす
 			}
 		}
-		byte[] mmfData = new byte[64];
-		mmfView.ReadArray<byte>(0, mmfData, 0, 64);
+		byte[] mmfData = new byte[MMF_SIZE];
+		mmfView.ReadArray<byte>(0, mmfData, 0, MMF_SIZE);
 		if (mutexToLock != null) mutexToLock.ReleaseMutex();
 
 		brakeInput.Value = mmfData[0];
@@ -833,11 +836,11 @@ class DensyaRelay: Form
 		controllerBrakeInput.Value = mmfData[2] % 10;
 		extBrakeInput.Value = mmfData[3];
 
-		doorClosedInput.Value = mmfData[10];
-		shockLeftInput.Value = mmfData[11];
-		shockRightInput.Value = mmfData[12];
-		ledInput.Value = mmfData[13];
-		atcInput.Value = mmfData[14] + mmfData[15] * 256;
-		speedInput.Value = mmfData[16] + mmfData[17] * 256;
+		doorClosedInput.Value = mmfData[MMF_RECEIVED_DATA_START];
+		shockLeftInput.Value = mmfData[MMF_RECEIVED_DATA_START + 1];
+		shockRightInput.Value = mmfData[MMF_RECEIVED_DATA_START + 2];
+		ledInput.Value = mmfData[MMF_RECEIVED_DATA_START + 3];
+		atcInput.Value = mmfData[MMF_RECEIVED_DATA_START + 4] + mmfData[MMF_RECEIVED_DATA_START + 5] * 256;
+		speedInput.Value = mmfData[MMF_RECEIVED_DATA_START + 6] + mmfData[MMF_RECEIVED_DATA_START + 7] * 256;
 	}
 }
