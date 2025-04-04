@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO.MemoryMappedFiles;
+using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 class DensyaRelay: Form
@@ -51,6 +53,9 @@ class DensyaRelay: Form
 	private MemoryMappedViewAccessor mmfView = null;
 	private Mutex mutex = null;
 	private System.Windows.Forms.Timer mmfPollingTimer;
+	private ushort? dataSentSerial = null;
+	private ushort? dataReceivedSerial = null;
+	private byte[] prevData = null;
 
 	private UIText uiText;
 	private string versionString = "";
@@ -579,6 +584,13 @@ class DensyaRelay: Form
 
 	private void NetworkConnectRadioClickHandler(object sender, EventArgs e)
 	{
+		bool newSenderMode = sender == networkSendRadio;
+		if (udpClient == null || newSenderMode != isSenderMode)
+		{
+			dataSentSerial = newSenderMode ? 0 : (ushort?)null;
+			dataReceivedSerial = newSenderMode ? (ushort?)null : 0;
+			prevData = null;
+		}
 		if (udpClient == null)
 		{
 			string destinationHostName = networkPeerAddressInput.Text;
@@ -626,18 +638,85 @@ class DensyaRelay: Form
 				return;
 			}
 			udpClient = newUdpClient;
+			newUdpClient.ReceiveAsync().ContinueWith(OnUdpClientReceive);
 		}
 		networkPeerAddressInput.Enabled = false;
 		networkPortInput.Enabled = false;
 		preferIPv6Check.Enabled = false;
-		isSenderMode = sender == networkSendRadio;
+		isSenderMode = newSenderMode;
 		networkOffRadio.Checked = false;
 		networkSendRadio.Checked = false;
 		networkReceiveRadio.Checked = false;
 		((RadioButton)sender).Checked = true;
 	}
 
-	private void WriteByteToMMF(int idx, int value)
+	private void OnUdpClientReceive(Task<UdpReceiveResult> task)
+	{
+		if (task.Status == TaskStatus.RanToCompletion)
+		{
+			OnUdpMessageReceive(task.Result.Buffer);
+		}
+		if (udpClient != null) udpClient.ReceiveAsync().ContinueWith(OnUdpClientReceive);
+	}
+
+	private void SendUdpMessage(byte[] message)
+	{
+		if (udpClient != null) udpClient.Send(message, message.Length);
+	}
+
+	private void OnUdpMessageReceive(byte[] message)
+	{
+		if (udpClient == null) return; // 通信がオフの場合、処理をしない
+		if (message.Length < 1) return; // メッセージの種類すら無い場合、処理をしない
+		if (isSenderMode)
+		{
+			// 送信モードなので、受信した受信データを処理する
+			if (message[0] == 0x01 && message.Length >= 4)
+			{
+				ushort serial = (ushort)(((ushort)message[1] << 8) | message[2]);
+				if (!IsValidSerial(dataReceivedSerial, serial)) return;
+				int payloadLength = message[3];
+				if (message.Length < payloadLength + 4) return;
+				WriteBytesToMMF(
+					MMF_RECEIVED_DATA_START,
+					message,
+					4,
+					Math.Min(payloadLength, MMF_SIZE - MMF_RECEIVED_DATA_START)
+				);
+				dataReceivedSerial = serial;
+			}
+		}
+		else
+		{
+			// 受信モードなので、受信した送信データを処理する
+			if (message[0] == 0x00 && message.Length >= 4)
+			{
+				ushort serial = (ushort)(((ushort)message[1] << 8) | message[2]);
+				if (!IsValidSerial(dataSentSerial, serial)) return;
+				int payloadLength = message[3];
+				if (message.Length < payloadLength + 5) return;
+				int keyDataNum = message[payloadLength + 4];
+				if (message.Length < payloadLength + 5 + 3 * keyDataNum) return;
+				WriteBytesToMMF(0, message, 4, Math.Min(payloadLength, MMF_RECEIVED_DATA_START));
+				// TODO：キーの処理
+				dataSentSerial = serial;
+			}
+		}
+	}
+
+	private static bool IsValidSerial(ushort? nextSerial, ushort receivedSerial)
+	{
+		if (!nextSerial.HasValue) return true;
+		int invalidMin = (int)nextSerial.Value - 0x4000;
+		int invalidMax = nextSerial.Value;
+		int valueToCheck = (int)receivedSerial;
+		if (invalidMin <= valueToCheck && valueToCheck <= invalidMax) return false;
+		valueToCheck -= 0x10000;
+		if (invalidMin <= valueToCheck && valueToCheck <= invalidMax) return false;
+		return true;
+	}
+
+	private void WriteBytesToMMF(int startIndex, byte[] data, int offset, int length)
 	{
 		Mutex mutexToLock = lockMutex ? mutex : null;
 		if (mutexToLock != null)
@@ -651,27 +730,19 @@ class DensyaRelay: Form
 				// 握りつぶす
 			}
 		}
-		mmfView.Write(idx, (byte)value);
+		mmfView.WriteArray<byte>(startIndex, data, offset, length);
 		if (mutexToLock != null) mutexToLock.ReleaseMutex();
+	}
+
+	private void WriteByteToMMF(int idx, int value)
+	{
+		WriteBytesToMMF(idx, new byte[]{ (byte)value }, 0, 1);
 	}
 
 	private void WriteWordToMMF(int idx, int value)
 	{
-		Mutex mutexToLock = lockMutex ? mutex : null;
-		if (mutexToLock != null)
-		{
-			try
-			{
-				mutexToLock.WaitOne();
-			}
-			catch (AbandonedMutexException)
-			{
-				// 握りつぶす
-			}
-		}
-		mmfView.Write(idx, (byte)value);
-		mmfView.Write(idx + 1, (byte)(value >> 8));
-		if (mutexToLock != null) mutexToLock.ReleaseMutex();
+		byte[] dataToWrite = new byte[] { (byte)value, (byte)(value >> 8) };
+		WriteBytesToMMF(idx, dataToWrite, 0, 2);
 	}
 
 	private void BrakeBarScrollHandler(object sender, EventArgs e)
@@ -842,5 +913,49 @@ class DensyaRelay: Form
 		ledInput.Value = mmfData[MMF_RECEIVED_DATA_START + 3];
 		atcInput.Value = mmfData[MMF_RECEIVED_DATA_START + 4] + mmfData[MMF_RECEIVED_DATA_START + 5] * 256;
 		speedInput.Value = mmfData[MMF_RECEIVED_DATA_START + 6] + mmfData[MMF_RECEIVED_DATA_START + 7] * 256;
+
+		if (udpClient != null)
+		{
+			int dataToSendOffset, dataToSendSize;
+			if (isSenderMode)
+			{
+				dataToSendOffset = 0;
+				dataToSendSize = Math.Min(sendDataSize, MMF_RECEIVED_DATA_START);
+			}
+			else
+			{
+				dataToSendOffset = MMF_RECEIVED_DATA_START;
+				dataToSendSize = Math.Min(receiveDataSize, MMF_SIZE - MMF_RECEIVED_DATA_START);
+			}
+			byte[] currentData = mmfData.Skip(dataToSendOffset).Take(dataToSendSize).ToArray();
+			if (prevData == null || !currentData.SequenceEqual(prevData))
+			{
+				if (isSenderMode)
+				{
+					byte[] message = new byte[5 + currentData.Length];
+					message[0] = 0x00;
+					message[1] = (byte)(dataSentSerial.Value >> 8);
+					message[2] = (byte)dataSentSerial.Value;
+					message[3] = (byte)currentData.Length;
+					currentData.CopyTo(message, 4);
+					// TODO：キー情報の送信
+					message[currentData.Length + 4] = 0;
+					dataSentSerial++;
+					SendUdpMessage(message);
+				}
+				else
+				{
+					byte[] message = new byte[4 + currentData.Length];
+					message[0] = 0x01;
+					message[1] = (byte)(dataReceivedSerial.Value >> 8);
+					message[2] = (byte)dataReceivedSerial.Value;
+					message[3] = (byte)currentData.Length;
+					currentData.CopyTo(message, 4);
+					dataReceivedSerial++;
+					SendUdpMessage(message);
+				}
+				prevData = currentData;
+			}
+		}
 	}
 }
